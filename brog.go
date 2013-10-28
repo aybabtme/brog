@@ -40,7 +40,7 @@ func main() {
 	http.HandleFunc("/heartbeat", HeartBeat)
 	http.HandleFunc("/", Index)
 
-	addr := fmt.Sprintf(":%d", port)
+	addr := fmt.Sprintf("localhost:%d", port)
 
 	sOut.Printf("Borg open for business on %s", addr)
 	err := http.ListenAndServe(addr, nil)
