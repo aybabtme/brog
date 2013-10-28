@@ -44,5 +44,4 @@ func initPortVar() {
 		port = portEnv
 		sOut.Printf("Using '%s' variable", PortEnvVar)
 	}
-
 }
