@@ -1,48 +1,51 @@
-package main
+package brog
 
 import (
 	"fmt"
-	"github.com/aybabtme/color/brush"
-	"log"
 	"net/http"
-	"os"
+	"runtime"
 )
 
-const (
-	// Placeholder for now
-	Placeholder = `<!DOCTYPE html>
-<html>
-<head><title>Brog Welcomes You</title></head>
-<body>
-    <h1>Hello From Brog</h1>
-    <p>Brog loves you.  Have a nice day.</p>
-</body>
-</html>`
-)
+const ()
 
-var (
-	sOut = log.New(os.Stdout, brush.Green("[OK]  ").String(), log.LstdFlags)
-	sErr = log.New(os.Stderr, brush.Red("[ERR] ").String(), log.LstdFlags)
-)
-
-// HeartBeat answers 200 to any request.
-func HeartBeat(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
+type Brog struct {
+	*logMux
+	Config *Config
 }
 
-// Index serves placeholder for now
-func Index(rw http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(rw, Placeholder)
+func PrepareBrog() (*Brog, error) {
+	config, err := loadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("preparing brog's configuration, %v", err)
+	}
+
+	logMux, err := makeLogMux(config.LogFilename)
+	if err != nil {
+		return nil, fmt.Errorf("making log multiplex on path %s, %v", config.LogFilename, err)
+	}
+
+	brog := Brog{
+		logMux: logMux,
+		Config: config,
+	}
+
+	runtime.GOMAXPROCS(config.MaxCPUs)
+	brog.watchTemplates(config.TemplatePath)
+	brog.watchPosts(config.PostPath)
+
+	return &brog, nil
 }
 
-func main() {
+func (b *Brog) ListenAndServe() error {
+	addr := fmt.Sprintf("%s:%d", b.Config.Hostname, b.Config.PortNumber)
+	b.Ok("Borg open for business on %s", addr)
+	return http.ListenAndServe(addr, nil)
+}
 
-	http.HandleFunc("/heartbeat", HeartBeat)
-	http.HandleFunc("/", Index)
+func (b *Brog) watchTemplates(templPath string) {
+	b.Warn("Not implemented yet! Watch path at %s", templPath)
+}
 
-	addr := fmt.Sprintf("localhost:%d", port)
-
-	sOut.Printf("Borg open for business on %s", addr)
-	err := http.ListenAndServe(addr, nil)
-	sErr.Printf("Whoops! %v", err)
+func (b *Brog) watchPosts(postPath string) {
+	b.Warn("Not implemented yet! Watch path at %s", postPath)
 }
