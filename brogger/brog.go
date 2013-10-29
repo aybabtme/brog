@@ -1,8 +1,9 @@
-package brog
+package brogger
 
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"runtime"
 )
 
@@ -43,9 +44,11 @@ func (b *Brog) ListenAndServe() error {
 }
 
 func (b *Brog) watchTemplates(templPath string) {
+	os.MkdirAll(templPath, 0740)
 	b.Warn("Not implemented yet! Watch path at %s", templPath)
 }
 
 func (b *Brog) watchPosts(postPath string) {
+	os.MkdirAll(postPath, 0740)
 	b.Warn("Not implemented yet! Watch path at %s", postPath)
 }

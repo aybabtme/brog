@@ -1,4 +1,4 @@
-package brog
+package brogger
 
 import (
 	"fmt"
@@ -41,17 +41,17 @@ func makeLogMux(filename string) (*logMux, error) {
 }
 
 func (l *logMux) Ok(format string, args ...interface{}) {
-	l.okConsole.Printf(format, args)
-	l.okFile.Printf(format, args)
+	l.okConsole.Printf(format, args...)
+	l.okFile.Printf(format, args...)
 }
 
 func (l *logMux) Warn(format string, args ...interface{}) {
-	l.warnConsole.Printf(format, args)
-	l.warnFile.Printf(format, args)
+	l.warnConsole.Printf(format, args...)
+	l.warnFile.Printf(format, args...)
 }
 func (l *logMux) Err(format string, args ...interface{}) {
-	l.errorConsole.Printf(format, args)
-	l.errorFile.Printf(format, args)
+	l.errorConsole.Printf(format, args...)
+	l.errorFile.Printf(format, args...)
 }
 
 func (l *logMux) Close() error {

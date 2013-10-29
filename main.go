@@ -2,11 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/aybabtme/brog"
+	"github.com/aybabtme/brog/brogger"
 	"net/http"
+	"os"
 )
 
 const (
+
+	// CreateOnly a brog structure, but don't run the brog.
+	CreateOnly = "create"
+
 	// Placeholder for now
 	Placeholder = `<!DOCTYPE html>
 <html>
@@ -30,14 +35,24 @@ func Index(rw http.ResponseWriter, req *http.Request) {
 
 func main() {
 
-	http.HandleFunc("/heartbeat", HeartBeat)
-	http.HandleFunc("/", Index)
-
-	borg, err := brog.PrepareBrog()
+	brog, err := brogger.PrepareBrog()
 	if err != nil {
 		panic(err)
 	}
 
-	err = borg.ListenAndServe()
-	borg.Err("Whoops! %v", err)
+	for _, arg := range os.Args[1:] {
+		switch arg {
+		case CreateOnly:
+			brog.Ok("Only creating brog structure. Bye!")
+			return
+		default:
+			brog.Warn("Unknown command: %s, ignoring", arg)
+		}
+	}
+
+	http.HandleFunc("/heartbeat", HeartBeat)
+	http.HandleFunc("/", Index)
+
+	err = brog.ListenAndServe()
+	brog.Err("Whoops! %v", err)
 }

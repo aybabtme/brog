@@ -1,4 +1,4 @@
-package brog
+package brogger
 
 import (
 	"encoding/json"

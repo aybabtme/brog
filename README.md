@@ -6,17 +6,19 @@ Static blog app.
 Usage
 -----
 
+Install `brog`.
 ```bash
-go build
+go get github.com/aybabtme/brog
+```
 
-./brog -port=8080         # Listens on port 8080
-BROG_PORT=9000 ./brog     # Listens on port 9000
-./brog                    # Listens on DefaultPort
+Use `brog`.
+```bash
+cd your/blog/path
+brog create # Creates brog_config.json, brog.log, templates/ and posts/
+brog        # Creates files if missing, start brog
 ```
 
 Config
 ------
 
-Set the `BROG_PORT` variable to change which port Brog listens on by default.
-Set the `port` flag to achieve the same effect while overriding the value of `
-BROG_PORT`.
+Look at the `brog_config.json` file, it should be pretty clear.
