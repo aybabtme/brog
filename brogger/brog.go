@@ -3,15 +3,14 @@ package brogger
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"runtime"
 )
 
-const ()
-
 type Brog struct {
 	*logMux
-	Config *Config
+	Config   *Config
+	tmplMngr *TemplateManager
+	postMngr *PostManager
 }
 
 func PrepareBrog() (*Brog, error) {
@@ -25,30 +24,30 @@ func PrepareBrog() (*Brog, error) {
 		return nil, fmt.Errorf("making log multiplex on path %s, %v", config.LogFilename, err)
 	}
 
-	brog := Brog{
+	brog := &Brog{
 		logMux: logMux,
 		Config: config,
 	}
 
-	runtime.GOMAXPROCS(config.MaxCPUs)
-	brog.watchTemplates(config.TemplatePath)
-	brog.watchPosts(config.PostPath)
+	tmplMngr, err := StartTemplateManager(brog, config.TemplatePath)
+	if err != nil {
+		return nil, fmt.Errorf("starting template manager, %v", err)
+	}
+	brog.tmplMngr = tmplMngr
 
-	return &brog, nil
+	postMngr, err := StartPostManager(brog, config.PostPath)
+	if err != nil {
+		return nil, fmt.Errorf("starting post manager, %v", err)
+	}
+	brog.postMngr = postMngr
+
+	runtime.GOMAXPROCS(config.MaxCPUs)
+
+	return brog, nil
 }
 
 func (b *Brog) ListenAndServe() error {
 	addr := fmt.Sprintf("%s:%d", b.Config.Hostname, b.Config.PortNumber)
 	b.Ok("Borg open for business on %s", addr)
 	return http.ListenAndServe(addr, nil)
-}
-
-func (b *Brog) watchTemplates(templPath string) {
-	os.MkdirAll(templPath, 0740)
-	b.Warn("Not implemented yet! Watch path at %s", templPath)
-}
-
-func (b *Brog) watchPosts(postPath string) {
-	os.MkdirAll(postPath, 0740)
-	b.Warn("Not implemented yet! Watch path at %s", postPath)
 }

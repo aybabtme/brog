@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 )
@@ -46,6 +47,11 @@ func (c *Config) selfValidate() error {
 	if c.MaxCPUs < 0 {
 		return fmt.Errorf("invalid CPU count (%d)", c.MaxCPUs)
 	}
+
+	c.PostPath = path.Clean(c.PostPath)
+	c.TemplatePath = path.Clean(c.TemplatePath)
+	c.LogFilename = path.Clean(c.LogFilename)
+
 	return nil
 }
 
@@ -58,9 +64,9 @@ func loadConfig() (*Config, error) {
 		PortNumber:   DefaultPortNumber,
 		Hostname:     DefaultHostname,
 		MaxCPUs:      DefaultMaxCPUs,
-		TemplatePath: DefaultTemplatePath,
-		PostPath:     DefaultPostPath,
-		LogFilename:  DefaultLogFilename,
+		TemplatePath: path.Clean(DefaultTemplatePath),
+		PostPath:     path.Clean(DefaultPostPath),
+		LogFilename:  path.Clean(DefaultLogFilename),
 	}
 
 	err := persistToFile(ConfigFilename, c)
