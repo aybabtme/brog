@@ -12,9 +12,6 @@ const (
 	// CreateOnly a brog structure, but don't run the brog.
 	CreateOnly = "create"
 
-	// SamplePost
-	SamplePost = "sample"
-
 	// Placeholder for now
 	Placeholder = `<!DOCTYPE html>
 <html>
@@ -47,9 +44,6 @@ func main() {
 		switch arg {
 		case CreateOnly:
 			brog.Ok("Only creating brog structure. Bye!")
-			return
-		case SamplePost:
-			brog.Ok("Creating sample post. Bye!")
 			err := makeSample(brog.Config.PostPath, "sample.md")
 			if err != nil {
 				brog.Err("Could not write sample brog post, %v", err)
