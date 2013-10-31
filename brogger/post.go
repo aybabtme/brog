@@ -60,8 +60,10 @@ func WriteSamplePost(filename string) error {
 # Hello!!
 This is my first Brog post.  I really like broging and feeling like I'm finally one of those Broggers.  At last, I'm part of a community!
 
-` + "```" + `
-Fenced code block?
+` + "```go" + `
+func Hello() {
+	fmt.Printf("Hello?")
+}
 ` + "```" + `
 
 Maybe!  __Who knows!!!__  Hopefully [this will be a link][1].

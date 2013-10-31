@@ -24,3 +24,6 @@ _testmain.go
 
 *.exe
 .DS_Store
+posts
+brog.log
+brog_config.json
