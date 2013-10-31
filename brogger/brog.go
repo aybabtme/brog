@@ -51,3 +51,8 @@ func (b *Brog) ListenAndServe() error {
 	b.Ok("Borg open for business on %s", addr)
 	return http.ListenAndServe(addr, nil)
 }
+
+func (b *Brog) Close() {
+	defer b.postMngr.close()
+	defer b.logMux.Close()
+}

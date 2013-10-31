@@ -39,6 +39,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer brog.Close()
 
 	for _, arg := range os.Args[1:] {
 		switch arg {
