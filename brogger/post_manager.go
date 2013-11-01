@@ -174,7 +174,7 @@ func (p *PostManager) processPostEvent(ev *fsnotify.FileEvent) {
 	case ".markdown":
 	case ".mkd":
 	default:
-		p.brog.Ok("Ignoring files in '%s': %s", ext, ev.Name)
+		p.brog.Ok("Posts ignore files in '%s': %s", ext, ev.Name)
 		return
 	}
 
