@@ -12,9 +12,9 @@ clean:
 	rm -f brog.log
 	rm -f brogger/base_assets.go
 
-install: all, clean
+install: configure all
 	go get
 
 # Target to setup the build appropriately, use patched version of bin2go
 configure: clean
-	go get github.com/aybabtme/bin2go
+	go get -u github.com/aybabtme/bin2go

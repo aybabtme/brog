@@ -50,7 +50,8 @@ func CopyBrogBinaries(conf *Config) error {
 	}
 
 	// Assets
-	os.MkdirAll(conf.AssetPath, 0740)
+	os.MkdirAll(path.Join(conf.AssetPath, cssPath), 0740)
+	os.MkdirAll(path.Join(conf.AssetPath, jsPath), 0740)
 	if err := brogCss.ReplicateInDir(conf.AssetPath); err != nil {
 		return fmt.Errorf("replicating %s, %v", brogCss.filename, err)
 	}
