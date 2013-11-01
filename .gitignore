@@ -1,11 +1,18 @@
+# Binaries
 brog
+
+# Packed stuff
 brogger/base_assets.go
-posts
+
+# Execution artifacts
 brog.log
 brog_config.json
-assets
-templates
+assets/
+templates/
+posts/
 
+# But keep the base models
+!brogger/base/**/*
 
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
