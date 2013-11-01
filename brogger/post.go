@@ -5,18 +5,39 @@ import (
 	"fmt"
 	"github.com/russross/blackfriday"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
 type Post struct {
-	filename  string
+	filename string
+	id       string
+
 	Title     string    `json:"title"`
 	Date      time.Time `json:"date"`
 	Author    string    `json:"author"`
 	Invisible bool      `json:"invisible"`
 	Abstract  string    `json:"abstract"`
-	Content   string
+	Content   string    // Loaded from the Markdown part
+}
+
+func (p *Post) GetID() string {
+	return p.id
+}
+
+func (p *Post) setID() {
+
+	date := fmt.Sprintf("%d_%s_%d_", p.Date.Day(), p.Date.Month().String(), p.Date.Year())
+
+	cleanTitle := strings.TrimSpace(p.Title)
+	lowerTitle := strings.ToLower(cleanTitle)
+	snakeTitle := strings.Replace(lowerTitle, " ", "_", -1)
+
+	rawID := strings.TrimSpace(date + snakeTitle)
+
+	p.id = url.QueryEscape(rawID)
 }
 
 func NewPostFromFile(filename string) (*Post, error) {
@@ -44,6 +65,8 @@ func NewPostFromFile(filename string) (*Post, error) {
 	htmlContent := blackfriday.MarkdownCommon(markdownContent)
 	post.Content = string(htmlContent)
 
+	post.setID()
+
 	return &post, nil
 }
 
@@ -62,40 +85,4 @@ func (p PostList) Less(i, j int) bool {
 
 func (p PostList) Swap(i, j int) {
 	p.posts[i], p.posts[j] = p.posts[j], p.posts[i]
-}
-
-func WriteSamplePost(filename string) error {
-
-	const samplePost = `{
-    "title":"My First Post",
-    "author":"Antoine Grondin",
-    "date":"2013-10-30T23:59:59.000Z",
-    "invisible": true,
-    "abstract":"My first post using Brog"
-}
-# Hello!!
-This is my first Brog post.  I really like broging and feeling like I'm finally one of those Broggers.  At last, I'm part of a community!
-
-` + "```go" + `
-func Hello() {
-	fmt.Printf("Hello?")
-}
-` + "```" + `
-
-Maybe!  __Who knows!!!__  Hopefully [this will be a link][1].
-
-> Don't click it!!
-
-_Shhhh_.
-
-## Reasons why Antoine is great
-
-* He has a nice beard.
-* He has a nice way of mispeaking English.
-* He prefers Star Trek to Star Wars.
-
-[1]: en.wikipedia.org/wiki/Borg_(Star_Trek)
-`
-
-	return ioutil.WriteFile(filename, []byte(samplePost), 0640)
 }

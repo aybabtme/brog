@@ -76,9 +76,9 @@ func (p *PostManager) loadAllPosts() error {
 }
 
 func (p *PostManager) GetAllPosts() []*Post {
-	var postCopy []*Post
 	p.mu.RLock()
 	defer p.mu.RUnlock()
+	postCopy := make([]*Post, len(p.sortedPosts))
 	copy(postCopy, p.sortedPosts)
 	return postCopy
 }
@@ -90,9 +90,20 @@ func (p *PostManager) GetPost(key string) (*Post, bool) {
 	return post, ok
 }
 
-func (p *PostManager) SetPost(key string, post *Post) {
+func (p *PostManager) FindPostWithFilename(filename string) (*Post, bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	for _, post := range p.posts {
+		if post.filename == filename {
+			return post, true
+		}
+	}
+	return nil, false
+}
+
+func (p *PostManager) SetPost(post *Post) {
 	p.mu.Lock()
-	p.posts[key] = post
+	p.posts[post.GetID()] = post
 	p.mu.Unlock()
 
 	p.sortPosts()
@@ -228,7 +239,7 @@ func (p *PostManager) processPostCreate(ev *fsnotify.FileEvent) {
 func (p *PostManager) processPostModify(ev *fsnotify.FileEvent) {
 	p.brog.Ok("Modified file '%s'", ev.Name)
 
-	post, ok := p.GetPost(ev.Name)
+	post, ok := p.FindPostWithFilename(ev.Name)
 
 	if !ok {
 		p.brog.Warn("File '%s' was unknown", ev.Name)
@@ -254,7 +265,7 @@ func (p *PostManager) loadFromFile(filename string) error {
 		return fmt.Errorf("loading post from file '%s', %v", filename, err)
 	}
 
-	p.SetPost(filename, post)
+	p.SetPost(post)
 
 	p.brog.Ok("Loaded post '%s' from file '%s', %d posts total", post.Title, filename, len(p.posts))
 

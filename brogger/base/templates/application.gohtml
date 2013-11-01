@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset="utf-8">
+   <title>{{.BrogName}}</title>
+   {{template "style" .}}
+</head>
+<body>
+
+<div id="header">
+   {{template "header" .}}
+</div>
+
+<div id="content">
+      {{template "content" .}}
+</div>
+
+<div id="footer">
+   {{template "footer" .}}
+</div>
+
+{{template "javascript" .}}
+</body>
+</html>

@@ -18,20 +18,24 @@ const (
 
 // Defaults for Brog's configuration.
 var (
+	DefaultBrogName     = "My Very Own Brog"
 	DefaultPortNumber   = 3000
 	DefaultHostname     = "localhost"
 	DefaultMaxCPUs      = runtime.NumCPU()
 	DefaultTemplatePath = "templates/"
 	DefaultPostPath     = "posts/"
+	DefaultAssetPath    = "assets/"
 	DefaultLogFilename  = "brog.log"
 )
 
 type Config struct {
+	BrogName     string `json:"brogName"`
 	PortNumber   int    `json:"portNumber"`
 	Hostname     string `json:"hostName"`
 	MaxCPUs      int    `json:"maxCpus"`
 	TemplatePath string `json:"templatePath"`
 	PostPath     string `json:"postPath"`
+	AssetPath    string `json:"assetPath"`
 	LogFilename  string `json:"logFilename"`
 }
 
@@ -47,7 +51,7 @@ func (c *Config) selfValidate() error {
 	if c.MaxCPUs < 0 {
 		return fmt.Errorf("invalid CPU count (%d)", c.MaxCPUs)
 	}
-
+	c.AssetPath = path.Clean(c.AssetPath)
 	c.PostPath = path.Clean(c.PostPath)
 	c.TemplatePath = path.Clean(c.TemplatePath)
 	c.LogFilename = path.Clean(c.LogFilename)
@@ -61,11 +65,13 @@ func loadConfig() (*Config, error) {
 	}
 
 	c := &Config{
+		BrogName:     DefaultBrogName,
 		PortNumber:   DefaultPortNumber,
 		Hostname:     DefaultHostname,
 		MaxCPUs:      DefaultMaxCPUs,
 		TemplatePath: path.Clean(DefaultTemplatePath),
 		PostPath:     path.Clean(DefaultPostPath),
+		AssetPath:    path.Clean(DefaultAssetPath),
 		LogFilename:  path.Clean(DefaultLogFilename),
 	}
 

@@ -1,10 +1,17 @@
 package brogger
 
 import (
-	"fmt"
 	"html/template"
-	"io/ioutil"
-	"os"
+)
+
+// Base templates
+const (
+	applicationTmpl = "application.gohtml"
+	indexTmpl       = "index.gohtml"
+	styleTmpl       = "style.gohtml"
+	javascriptTmpl  = "javascript.gohtml"
+	headerTmpl      = "header.gohtml"
+	footerTmpl      = "footer.gohtml"
 )
 
 type TemplateManager struct {
@@ -15,26 +22,14 @@ type TemplateManager struct {
 
 func StartTemplateManager(brog *Brog, templPath string) (*TemplateManager, error) {
 
-	os.MkdirAll(templPath, 0740)
-	fileInfos, err := ioutil.ReadDir(templPath)
-	if err != nil {
-		return nil, fmt.Errorf("listing directory '%s', %v", templPath, err)
-	}
-
 	tmpMngr := &TemplateManager{
 		brog:      brog,
 		path:      templPath,
 		templates: make(map[string]*template.Template),
 	}
 
-	for _, fileInfo := range fileInfos {
-		if !fileInfo.IsDir() {
-			err := tmpMngr.loadFromFile(fileInfo.Name())
-			if err != nil {
-				brog.Warn("Loading template from file '%s' failed, %v", fileInfo.Name(), err)
-			}
-		}
-	}
+	// By default, load the bin2go strings since they're compiled with Brog.
+	// When a file watch changes, replace the bin2go string with the file
 
 	brog.Warn("Not implemented yet! Watch path at %s", templPath)
 

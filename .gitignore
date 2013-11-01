@@ -27,3 +27,5 @@ _testmain.go
 posts
 brog.log
 brog_config.json
+assets
+templates

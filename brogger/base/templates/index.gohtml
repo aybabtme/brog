@@ -1,0 +1,15 @@
+{{define "content"}}
+{{range .Posts}}
+
+<h1>
+<a href="/posts/{{.GetID}}">
+   {{.Title}}
+</a>
+<p><small>Posted on {{.Date.Weekday}} {{.Date.Day}} {{.Date.Month}} {{.Date.Year}}</small></p>
+</h1>
+
+{{else}}
+<div><h1>There are not post on this blog!</h1></div>
+{{end}}
+</div>
+{{end}}
