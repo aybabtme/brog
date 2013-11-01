@@ -15,6 +15,6 @@ clean:
 install: all, clean
 	go get
 
-# Target to setup the build appropriately
+# Target to setup the build appropriately, use patched version of bin2go
 configure: clean
-	go get github.com/chsc/bin2go
+	go get github.com/aybabtme/bin2go
