@@ -22,7 +22,7 @@ func main() {
 		switch arg {
 		case CreateOnly:
 			brog.Ok("Only creating brog structure. Bye!")
-			err := makeSample(brog.Config.PostPath, "sample.md")
+			err := brogger.CopyBrogBinaries(brog.Config)
 			if err != nil {
 				brog.Err("Could not write sample brog post, %v", err)
 			}
@@ -34,8 +34,4 @@ func main() {
 
 	err = brog.ListenAndServe()
 	brog.Err("Whoops! %v", err)
-}
-
-func makeSample(dirpath, name string) error {
-	return brogger.WriteSamplePost(dirpath + string(os.PathSeparator) + name)
 }

@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -52,7 +53,6 @@ func StartPostManager(brog *Brog, filepath string) (*PostManager, error) {
 }
 
 func (p *PostManager) loadAllPosts() error {
-	os.MkdirAll(p.path, 0740)
 	fileInfos, err := ioutil.ReadDir(p.path)
 	if err != nil {
 		return fmt.Errorf("listing directory '%s', %v", p.path, err)
@@ -168,10 +168,11 @@ func (p *PostManager) watchForChanges(dirname string) error {
 
 func (p *PostManager) processPostEvent(ev *fsnotify.FileEvent) {
 
-	ext := filepath.Ext(ev.Name)
+	ext := strings.ToLower(filepath.Ext(ev.Name))
 	switch ext {
 	case ".md":
 	case ".markdown":
+	case ".mkd":
 	default:
 		p.brog.Ok("Ignoring files in '%s': %s", ext, ev.Name)
 		return

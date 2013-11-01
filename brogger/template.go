@@ -4,16 +4,6 @@ import (
 	"html/template"
 )
 
-// Base templates
-const (
-	applicationTmpl = "application.gohtml"
-	indexTmpl       = "index.gohtml"
-	styleTmpl       = "style.gohtml"
-	javascriptTmpl  = "javascript.gohtml"
-	headerTmpl      = "header.gohtml"
-	footerTmpl      = "footer.gohtml"
-)
-
 type TemplateManager struct {
 	brog      *Brog
 	path      string

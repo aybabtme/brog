@@ -1,5 +1,6 @@
 
 all:
+	sh package_assets.sh
 	go build
 
 clean:
@@ -9,8 +10,9 @@ clean:
 	rm -rf assets
 	rm -f brog_config.json
 	rm -f brog.log
+	rm -f brogger/base_assets.go
 
-install: clean
+install: all, clean
 	go get
 
 # Target to setup the build appropriately
