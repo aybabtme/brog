@@ -87,6 +87,9 @@ func (p *PostManager) GetPost(key string) (*Post, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	post, ok := p.posts[key]
+	if post.Invisible {
+		return nil, false
+	}
 	return post, ok
 }
 
@@ -132,6 +135,9 @@ func (p *PostManager) sortPosts() {
 
 	p.mu.RLock()
 	for _, val := range p.posts {
+		if val.Invisible {
+			continue
+		}
 		postL.posts = append(postL.posts, val)
 	}
 	p.mu.RUnlock()

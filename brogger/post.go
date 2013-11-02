@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -28,17 +27,7 @@ func (p *Post) GetID() string {
 }
 
 func (p *Post) setID() {
-
-	// TODO this is messing up the file watch
-	date := fmt.Sprintf("%d_%s_%d_", p.Date.Day(), p.Date.Month().String(), p.Date.Year())
-
-	cleanTitle := strings.TrimSpace(p.Title)
-	lowerTitle := strings.ToLower(cleanTitle)
-	snakeTitle := strings.Replace(lowerTitle, " ", "_", -1)
-
-	rawID := strings.TrimSpace(date + snakeTitle)
-
-	p.id = url.QueryEscape(rawID)
+	p.id = url.QueryEscape(stripExtension(p.filename))
 }
 
 func NewPostFromFile(filename string) (*Post, error) {
