@@ -103,7 +103,7 @@ func (p *PostManager) FindPostWithFilename(filename string) (*Post, bool) {
 
 func (p *PostManager) SetPost(post *Post) {
 	p.mu.Lock()
-	p.posts[post.GetID()] = post
+	p.posts[post.filename] = post
 	p.mu.Unlock()
 
 	p.sortPosts()
@@ -142,7 +142,7 @@ func (p *PostManager) sortPosts() {
 	p.mu.Unlock()
 }
 
-func (p *PostManager) close() error {
+func (p *PostManager) Close() error {
 	p.die <- struct{}{}
 	return p.watcher.Close()
 }
@@ -174,7 +174,7 @@ func (p *PostManager) processPostEvent(ev *fsnotify.FileEvent) {
 	case ".markdown":
 	case ".mkd":
 	default:
-		p.brog.Ok("Posts ignore files in '%s': %s", ext, ev.Name)
+		p.brog.Debug("Posts ignore files in '%s': %s", ext, ev.Name)
 		return
 	}
 
@@ -210,7 +210,7 @@ func (p *PostManager) processPostRename(ev *fsnotify.FileEvent) {
 		return
 	}
 
-	p.brog.Ok("Post '%s': old filename '%s', deleting, %d posts total",
+	p.brog.Debug("Post '%s': old filename '%s', deleting, %d posts total",
 		post.Title, ev.Name, len(p.posts))
 
 	return
@@ -225,12 +225,12 @@ func (p *PostManager) processPostDelete(ev *fsnotify.FileEvent) {
 		return
 	}
 
-	p.brog.Ok("Removing post '%s', %d posts left", post.Title, len(p.posts))
+	p.brog.Debug("Removing post '%s', %d posts left", post.Title, len(p.posts))
 	return
 }
 
 func (p *PostManager) processPostCreate(ev *fsnotify.FileEvent) {
-	p.brog.Ok("New file '%s'", ev.Name)
+	p.brog.Debug("New file '%s'", ev.Name)
 	err := p.loadFromFile(ev.Name)
 	if err != nil {
 		p.brog.Err("Error loading new post at '%s', %v", ev.Name, err)
@@ -238,25 +238,22 @@ func (p *PostManager) processPostCreate(ev *fsnotify.FileEvent) {
 }
 
 func (p *PostManager) processPostModify(ev *fsnotify.FileEvent) {
-	p.brog.Ok("Modified file '%s'", ev.Name)
+	p.brog.Debug("Modified file '%s'", ev.Name)
 
 	post, ok := p.FindPostWithFilename(ev.Name)
 
 	if !ok {
 		p.brog.Warn("File '%s' was unknown", ev.Name)
+	} else {
+		p.DeletePost(ev.Name)
+
+		p.brog.Warn("Removing related post '%s', %d posts left",
+			post.Title, len(p.posts))
 	}
 
 	err := p.loadFromFile(ev.Name)
 	if err != nil {
 		p.brog.Err("Error loading new post at '%s', %v", ev.Name, err)
-		if ok {
-
-			p.DeletePost(ev.Name)
-
-			p.brog.Warn("Removing related post '%s', %d posts left",
-				post.Title, len(p.posts))
-
-		}
 	}
 }
 
@@ -268,7 +265,7 @@ func (p *PostManager) loadFromFile(filename string) error {
 
 	p.SetPost(post)
 
-	p.brog.Ok("Loaded post '%s' from file '%s', %d posts total", post.Title, filename, len(p.posts))
+	p.brog.Debug("Loaded post '%s' from file '%s', %d posts total", post.Title, filename, len(p.posts))
 
 	return nil
 }

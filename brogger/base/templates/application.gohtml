@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+{{define "app"}}
+<!doctype html>
 <html>
 <head>
    <meta charset="utf-8">
@@ -6,19 +7,16 @@
    {{template "style" .}}
 </head>
 <body>
+    <header>
+       {{template "header" .}}
+    </header>
 
-<div id="header">
-   {{template "header" .}}
-</div>
+  {{template "content" .}}
 
-<div id="content">
-      {{template "content" .}}
-</div>
-
-<div id="footer">
-   {{template "footer" .}}
-</div>
-
+    <footer>
+       {{template "footer" .}}
+    </footer>
 {{template "javascript" .}}
 </body>
 </html>
+{{end}}

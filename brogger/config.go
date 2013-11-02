@@ -20,7 +20,7 @@ const (
 var (
 	DefaultBrogName     = "My Very Own Brog"
 	DefaultPortNumber   = 3000
-	DefaultHostname     = "localhost"
+	DefaultHostname     = mustHave(os.Hostname())
 	DefaultMaxCPUs      = runtime.NumCPU()
 	DefaultTemplatePath = "templates/"
 	DefaultPostPath     = "posts/"
@@ -128,4 +128,11 @@ func persistToFile(filename string, config *Config) error {
 		return fmt.Errorf("writing configuration to file '%s', %v", filename, err)
 	}
 	return nil
+}
+
+func mustHave(value string, err error) string {
+	if err != nil {
+		panic(err)
+	}
+	return value
 }

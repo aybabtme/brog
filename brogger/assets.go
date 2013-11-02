@@ -24,12 +24,13 @@ func (p *packed) ReplicateInDir(dirpath string) error {
 
 // Base templates
 var (
-	applicationTmpl = packed{"application.gohtml", baseTemplatesApplicationGohtml}
-	indexTmpl       = packed{"index.gohtml", baseTemplatesIndexGohtml}
-	styleTmpl       = packed{"style.gohtml", baseTemplatesStyleGohtml}
-	javascriptTmpl  = packed{"javascript.gohtml", baseTemplatesJavascriptGohtml}
-	headerTmpl      = packed{"header.gohtml", baseTemplatesHeaderGohtml}
-	footerTmpl      = packed{"footer.gohtml", baseTemplatesFooterGohtml}
+	appPaktTmpl        = packed{appTmplName, baseTemplatesApplicationGohtml}
+	indexPaktTmpl      = packed{indexTmplName, baseTemplatesIndexGohtml}
+	postPaktTmpl       = packed{postTmplName, baseTemplatesPostGohtml}
+	stylePaktTmpl      = packed{styleTmplName, baseTemplatesStyleGohtml}
+	javascriptPaktTmpl = packed{jsTmplName, baseTemplatesJavascriptGohtml}
+	headerPaktTmpl     = packed{headerTmplName, baseTemplatesHeaderGohtml}
+	footerPaktTmpl     = packed{footerTmplName, baseTemplatesFooterGohtml}
 )
 
 // Base CSS
@@ -39,7 +40,10 @@ var brogCss = packed{cssPath + "brog.css", baseAssetsCssBrogCss}
 var brogJs = packed{jsPath + "brog.js", baseAssetsJsBrogJs}
 
 // Base posts
-var samplePost = packed{"sample.md", basePostsSampleMd}
+var (
+	samplePost = packed{"sample.md", basePostsSampleMd}
+	blankPost  = packed{"blank.md", basePostsBlankMd}
+)
 
 func CopyBrogBinaries(conf *Config) error {
 
@@ -61,24 +65,32 @@ func CopyBrogBinaries(conf *Config) error {
 
 	// Templates
 	os.MkdirAll(conf.TemplatePath, 0740)
-	if err := applicationTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
-		return fmt.Errorf("replicating %s, %v", applicationTmpl.filename, err)
+	if err := appPaktTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
+		return fmt.Errorf("replicating %s, %v", appPaktTmpl.filename, err)
 	}
-	if err := indexTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
-		return fmt.Errorf("replicating %s, %v", indexTmpl.filename, err)
+	if err := indexPaktTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
+		return fmt.Errorf("replicating %s, %v", indexPaktTmpl.filename, err)
 	}
-	if err := styleTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
-		return fmt.Errorf("replicating %s, %v", styleTmpl.filename, err)
+	if err := postPaktTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
+		return fmt.Errorf("replicating %s, %v", postPaktTmpl.filename, err)
 	}
-	if err := javascriptTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
-		return fmt.Errorf("replicating %s, %v", javascriptTmpl.filename, err)
+	if err := stylePaktTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
+		return fmt.Errorf("replicating %s, %v", stylePaktTmpl.filename, err)
 	}
-	if err := headerTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
-		return fmt.Errorf("replicating %s, %v", headerTmpl.filename, err)
+	if err := javascriptPaktTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
+		return fmt.Errorf("replicating %s, %v", javascriptPaktTmpl.filename, err)
 	}
-	if err := footerTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
-		return fmt.Errorf("replicating %s, %v", footerTmpl.filename, err)
+	if err := headerPaktTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
+		return fmt.Errorf("replicating %s, %v", headerPaktTmpl.filename, err)
+	}
+	if err := footerPaktTmpl.ReplicateInDir(conf.TemplatePath); err != nil {
+		return fmt.Errorf("replicating %s, %v", footerPaktTmpl.filename, err)
 	}
 
 	return nil
+}
+
+func CopyBlankToFilename(conf *Config, filename string) error {
+	fullpath := path.Clean(conf.PostPath) + string(os.PathSeparator) + filename
+	return ioutil.WriteFile(fullpath, basePostsBlankMd, 0640)
 }

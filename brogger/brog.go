@@ -24,29 +24,67 @@ func PrepareBrog() (*Brog, error) {
 		return nil, fmt.Errorf("making log multiplex on path %s, %v", config.LogFilename, err)
 	}
 
-	// Must be done before any manager is started
-	CopyBrogBinaries(config)
-
 	brog := &Brog{
 		logMux: logMux,
 		Config: config,
 	}
 
-	tmplMngr, err := StartTemplateManager(brog, config.TemplatePath)
-	if err != nil {
-		return nil, fmt.Errorf("starting template manager, %v", err)
-	}
-	brog.tmplMngr = tmplMngr
-
-	postMngr, err := StartPostManager(brog, config.PostPath)
-	if err != nil {
-		return nil, fmt.Errorf("starting post manager, %v", err)
-	}
-	brog.postMngr = postMngr
-
 	runtime.GOMAXPROCS(config.MaxCPUs)
 
 	return brog, nil
+}
+
+func (b *Brog) ListenAndServe() error {
+
+	addr := fmt.Sprintf("%s:%d", b.Config.Hostname, b.Config.PortNumber)
+
+	b.Ok("CAPTAIN: Open channel, %s", addr)
+	b.Warn("ON SCREEN: We are the Brog. Resistance is futile.")
+
+	if err := b.startWatchers(); err != nil {
+		return err
+	}
+
+	http.HandleFunc("/heartbeat", b.heartBeat)
+	http.HandleFunc("/", b.indexFunc)
+	http.HandleFunc("/posts/", b.postFunc)
+	http.Handle("/assets", http.StripPrefix("/assets", http.FileServer(http.Dir(b.Config.AssetPath))))
+
+	b.Ok("Assimilation completed.")
+	return http.ListenAndServe(addr, nil)
+}
+
+func (b *Brog) Close() {
+
+	if b.postMngr != nil {
+		defer b.postMngr.Close()
+	}
+
+	if b.tmplMngr != nil {
+		defer b.tmplMngr.Close()
+	}
+
+	if b.logMux != nil {
+		defer b.logMux.Close()
+	}
+
+}
+
+func (b *Brog) startWatchers() error {
+	CopyBrogBinaries(b.Config)
+
+	tmplMngr, err := StartTemplateManager(b, b.Config.TemplatePath)
+	if err != nil {
+		return fmt.Errorf("starting template manager, %v", err)
+	}
+	b.tmplMngr = tmplMngr
+
+	postMngr, err := StartPostManager(b, b.Config.PostPath)
+	if err != nil {
+		return fmt.Errorf("starting post manager, %v", err)
+	}
+	b.postMngr = postMngr
+	return nil
 }
 
 // heartBeat answers 200 to any request.
@@ -68,23 +106,4 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 	rw.WriteHeader(http.StatusNotImplemented)
-}
-
-func (b *Brog) ListenAndServe() error {
-
-	http.HandleFunc("/heartbeat", b.heartBeat)
-
-	http.HandleFunc("/", b.indexFunc)
-	http.HandleFunc("/post/", b.postFunc)
-
-	http.Handle("/assets", http.StripPrefix("/assets", http.FileServer(http.Dir("assets/"))))
-
-	addr := fmt.Sprintf("%s:%d", b.Config.Hostname, b.Config.PortNumber)
-	b.Ok("Borg open for business on %s", addr)
-	return http.ListenAndServe(addr, nil)
-}
-
-func (b *Brog) Close() {
-	defer b.postMngr.close()
-	defer b.logMux.Close()
 }
