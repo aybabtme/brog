@@ -10,6 +10,9 @@ import (
 type logMux struct {
 	logFile *os.File
 
+	debugFile    *log.Logger
+	debugConsole *log.Logger
+
 	okFile    *log.Logger
 	okConsole *log.Logger
 
@@ -29,15 +32,42 @@ func makeLogMux(filename string) (*logMux, error) {
 		return nil, fmt.Errorf("opening log file %s, %v", filename, err)
 	}
 
+	debugPfx := fmt.Sprintf("%s%s%s ",
+		brush.DarkGray("["),
+		brush.Blue("DEBUG"),
+		brush.DarkGray("]"))
+
+	okPfx := fmt.Sprintf("   %s%s%s ",
+		brush.DarkGray("["),
+		brush.Green("OK"),
+		brush.DarkGray("]"))
+
+	warnPfx := fmt.Sprintf(" %s%s%s ",
+		brush.DarkGray("["),
+		brush.DarkYellow("WARN"),
+		brush.DarkGray("]"))
+
+	errPfx := fmt.Sprintf("%s%s%s ",
+		brush.DarkGray("["),
+		brush.Red("ERROR"),
+		brush.DarkGray("]"))
+
 	return &logMux{
 		logFile:      file,
-		okFile:       log.New(file, "[OK]   ", log.LstdFlags),
-		warnFile:     log.New(file, "[WARN] ", log.LstdFlags),
-		errorFile:    log.New(file, "[ERR]  ", log.LstdFlags),
-		okConsole:    log.New(os.Stdout, brush.Green("[OK]   ").String(), log.LstdFlags),
-		warnConsole:  log.New(os.Stdout, brush.Yellow("[WARN] ").String(), log.LstdFlags),
-		errorConsole: log.New(os.Stderr, brush.Red("[ERR]  ").String(), log.LstdFlags),
+		debugFile:    log.New(file, "[DEBUG] ", log.LstdFlags),
+		okFile:       log.New(file, "   [OK] ", log.LstdFlags),
+		warnFile:     log.New(file, " [WARN] ", log.LstdFlags),
+		errorFile:    log.New(file, "[ERROR] ", log.LstdFlags),
+		debugConsole: log.New(os.Stdout, debugPfx, log.LstdFlags),
+		okConsole:    log.New(os.Stdout, okPfx, log.LstdFlags),
+		warnConsole:  log.New(os.Stdout, warnPfx, log.LstdFlags),
+		errorConsole: log.New(os.Stderr, errPfx, log.LstdFlags),
 	}, nil
+}
+
+func (l *logMux) Debug(format string, args ...interface{}) {
+	l.debugConsole.Printf(format, args...)
+	l.debugFile.Printf(format, args...)
 }
 
 func (l *logMux) Ok(format string, args ...interface{}) {
