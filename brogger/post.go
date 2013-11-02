@@ -29,6 +29,7 @@ func (p *Post) GetID() string {
 
 func (p *Post) setID() {
 
+	// TODO this is messing up the file watch
 	date := fmt.Sprintf("%d_%s_%d_", p.Date.Day(), p.Date.Month().String(), p.Date.Year())
 
 	cleanTitle := strings.TrimSpace(p.Title)

@@ -1,8 +1,9 @@
 {{define "content"}}
 <article>
     <h1>
-        <a href="/posts/{{.GetID}}">{{.Title}}</a>
-        <p><small>Posted on {{.Date.Weekday}} {{.Date.Day}} {{.Date.Month}} {{.Date.Year}}</small></p>
+        {{.Title}}
     </h1>
+    <p><small>By {{.Author}}, {{.Date.Weekday}} {{.Date.Day}} {{.Date.Month}} {{.Date.Year}}</small></p>
+    {{.Content}}
 </article>
 {{end}}

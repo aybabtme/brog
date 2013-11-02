@@ -28,7 +28,7 @@ func main() {
 			return
 		case Create:
 			followingWords := strings.Join(commands[i+1:], "_")
-			doCreate(followingWords)
+			doCreate(followingWords + ".md")
 			return
 		default:
 			fmt.Printf("Unknown command: %s\n", arg)

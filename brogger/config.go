@@ -18,7 +18,6 @@ const (
 
 // Defaults for Brog's configuration.
 var (
-	DefaultBrogName     = "My Very Own Brog"
 	DefaultPortNumber   = 3000
 	DefaultHostname     = mustHave(os.Hostname())
 	DefaultMaxCPUs      = runtime.NumCPU()
@@ -29,7 +28,6 @@ var (
 )
 
 type Config struct {
-	BrogName     string `json:"brogName"`
 	PortNumber   int    `json:"portNumber"`
 	Hostname     string `json:"hostName"`
 	MaxCPUs      int    `json:"maxCpus"`
@@ -65,7 +63,6 @@ func loadConfig() (*Config, error) {
 	}
 
 	c := &Config{
-		BrogName:     DefaultBrogName,
 		PortNumber:   DefaultPortNumber,
 		Hostname:     DefaultHostname,
 		MaxCPUs:      DefaultMaxCPUs,

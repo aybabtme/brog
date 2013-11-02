@@ -90,11 +90,12 @@ func (p *PostManager) GetPost(key string) (*Post, bool) {
 	return post, ok
 }
 
-func (p *PostManager) FindPostWithFilename(filename string) (*Post, bool) {
+func (p *PostManager) DeletePostWithFilename(filename string) (*Post, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	for _, post := range p.posts {
 		if post.filename == filename {
+			delete(p.posts, post.GetID())
 			return post, true
 		}
 	}
@@ -103,7 +104,7 @@ func (p *PostManager) FindPostWithFilename(filename string) (*Post, bool) {
 
 func (p *PostManager) SetPost(post *Post) {
 	p.mu.Lock()
-	p.posts[post.filename] = post
+	p.posts[post.GetID()] = post
 	p.mu.Unlock()
 
 	p.sortPosts()
@@ -240,16 +241,13 @@ func (p *PostManager) processPostCreate(ev *fsnotify.FileEvent) {
 func (p *PostManager) processPostModify(ev *fsnotify.FileEvent) {
 	p.brog.Debug("Modified file '%s'", ev.Name)
 
-	post, ok := p.FindPostWithFilename(ev.Name)
+	post, ok := p.DeletePostWithFilename(ev.Name)
 
 	if !ok {
 		p.brog.Warn("File '%s' was unknown", ev.Name)
-	} else {
-		p.DeletePost(ev.Name)
-
-		p.brog.Warn("Removing related post '%s', %d posts left",
-			post.Title, len(p.posts))
 	}
+
+	p.brog.Warn("Removing related post '%s', %d posts left", post.Title, len(p.posts))
 
 	err := p.loadFromFile(ev.Name)
 	if err != nil {

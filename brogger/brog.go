@@ -3,7 +3,10 @@ package brogger
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"runtime"
+	"text/template"
+	"time"
 )
 
 type Brog struct {
@@ -93,17 +96,39 @@ func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-	fmt.Fprint(rw, `<!doctype html>
-<html>
-<head><title>Hello</title></head>
-<body>`)
-	for _, post := range b.postMngr.GetAllPosts() {
-		fmt.Fprintf(rw, "<h1>%s</h1>", post.Title)
-	}
-	fmt.Fprint(rw, "</body></html>")
+	defer statCount(b, req)()
+
+	posts := b.postMngr.GetAllPosts()
+	b.tmplMngr.DoWithIndex(func(t *template.Template) {
+		if err := t.Execute(rw, posts); err != nil {
+			b.Err("serving index request, %v", err)
+			return
+		}
+
+	})
 }
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusNotImplemented)
+	defer statCount(b, req)()
+
+	postID := path.Base(req.RequestURI)
+	post, ok := b.postMngr.GetPost(postID)
+	if !ok {
+		b.Warn("not found, %v", req)
+		http.NotFound(rw, req)
+		return
+	}
+	b.tmplMngr.DoWithPost(func(t *template.Template) {
+		if err := t.Execute(rw, post); err != nil {
+			b.Err("serving post request for ID=%s, %v", postID, err)
+			return
+		}
+	})
+}
+
+func statCount(b *Brog, req *http.Request) func() {
+	now := time.Now()
+	return func() {
+		b.Ok("Done in %s, req=%v", time.Since(now), req.URL)
+	}
 }

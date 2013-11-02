@@ -58,18 +58,16 @@ func StartTemplateManager(brog *Brog, templPath string) (*TemplateManager, error
 	return tmpMngr, nil
 }
 
-func (t *TemplateManager) PostTmpl() template.Template {
+func (t *TemplateManager) DoWithPost(do func(*template.Template)) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	// Give a copy
-	return *t.post
+	do(t.post)
 }
 
-func (t *TemplateManager) IndexTmpl() template.Template {
+func (t *TemplateManager) DoWithIndex(do func(*template.Template)) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	// Give a copy
-	return *t.index
+	do(t.index)
 }
 
 func (t *TemplateManager) Close() error {
@@ -83,25 +81,31 @@ func (t *TemplateManager) initializeAppTmpl() error {
 		return path.Join(t.brog.Config.TemplatePath, filename)
 	}
 
-	index, err := template.ParseFiles(
+	indexApp, err := template.ParseFiles(
 		prefix(appTmplName),
 		prefix(styleTmplName),
 		prefix(jsTmplName),
 		prefix(headerTmplName),
 		prefix(footerTmplName),
-		prefix(indexTmplName),
 	)
+	if err != nil {
+		return fmt.Errorf("parsing indexApp template, %v", err)
+	}
+	index, err := indexApp.ParseFiles(prefix(indexTmplName))
 	if err != nil {
 		return fmt.Errorf("parsing index template at '%s', %v", prefix(indexTmplName), err)
 	}
-	post, err := template.ParseFiles(
+	postApp, err := template.ParseFiles(
 		prefix(appTmplName),
 		prefix(styleTmplName),
 		prefix(jsTmplName),
 		prefix(headerTmplName),
 		prefix(footerTmplName),
-		prefix(postTmplName),
 	)
+	if err != nil {
+		return fmt.Errorf("parsing postApp template, %v", err)
+	}
+	post, err := postApp.ParseFiles(prefix(postTmplName))
 	if err != nil {
 		return fmt.Errorf("parsing post template at '%s', %v", prefix(postTmplName), err)
 	}
