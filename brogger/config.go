@@ -16,32 +16,31 @@ const (
 
 // Defaults for Brog's configuration.
 var (
-	DefaultPortNumber   = 3000
-	DefaultHostname     = mustHave(os.Hostname())
-	DefaultMaxCPUs      = runtime.NumCPU()
-	DefaultTemplatePath = "templates/"
-	DefaultPostPath     = "posts/"
-	DefaultAssetPath    = "assets/"
-	DefaultLogFilename  = "brog.log"
+	DefaultPortNumber       = 3000
+	DefaultHostname         = "localhost"
+	DefaultMaxCPUs          = runtime.NumCPU()
+	DefaultTemplatePath     = "templates/"
+	DefaultPostPath         = "posts/"
+	DefaultAssetPath        = "assets/"
+	DefaultPostFileExt      = ".md"
+	DefaultLogFilename      = "brog.log"
+	DefaultLogVerbosity     = "watch"
+	DefaultConsoleVerbosity = "watch"
 )
-
-func mustHave(value string, err error) string {
-	if err != nil {
-		panic(err)
-	}
-	return value
-}
 
 // Config contains all the settings that a Brog uses to watch and create
 // and serve posts, log events and execute in general.
 type Config struct {
-	PortNumber   int    `json:"portNumber"`
-	Hostname     string `json:"hostName"`
-	MaxCPUs      int    `json:"maxCpus"`
-	TemplatePath string `json:"templatePath"`
-	PostPath     string `json:"postPath"`
-	AssetPath    string `json:"assetPath"`
-	LogFilename  string `json:"logFilename"`
+	PortNumber       int    `json:"portNumber"`
+	Hostname         string `json:"hostName"`
+	MaxCPUs          int    `json:"maxCpus"`
+	TemplatePath     string `json:"templatePath"`
+	PostPath         string `json:"postPath"`
+	AssetPath        string `json:"assetPath"`
+	PostFileExt      string `json:"postFileExtension"`
+	LogFilename      string `json:"logFilename"`
+	LogFileVerbosity string `json:"logFileVerbosity"`
+	ConsoleVerbosity string `json:"consoleVerbosity"`
 }
 
 func (c *Config) selfValidate() error {
@@ -56,6 +55,10 @@ func (c *Config) selfValidate() error {
 	if c.MaxCPUs < 0 {
 		return fmt.Errorf("invalid CPU count (%d)", c.MaxCPUs)
 	}
+
+	if c.PostFileExt == "" {
+		return fmt.Errorf("invalid Post file extension (%s)", c.PostFileExt)
+	}
 	c.AssetPath = path.Clean(c.AssetPath)
 	c.PostPath = path.Clean(c.PostPath)
 	c.TemplatePath = path.Clean(c.TemplatePath)
@@ -66,7 +69,7 @@ func (c *Config) selfValidate() error {
 
 func loadConfig() (*Config, error) {
 	if !fileExists(ConfigFilename) {
-		return nil, fmt.Errorf("There is no Brog config file here.")
+		return nil, fmt.Errorf("there is no brog config file named '%s' here.", ConfigFilename)
 
 	}
 	return loadFromFile()
@@ -107,13 +110,16 @@ func loadFromFile() (*Config, error) {
 
 func newDefaultConfig() *Config {
 	return &Config{
-		PortNumber:   DefaultPortNumber,
-		Hostname:     DefaultHostname,
-		MaxCPUs:      DefaultMaxCPUs,
-		TemplatePath: path.Clean(DefaultTemplatePath),
-		PostPath:     path.Clean(DefaultPostPath),
-		AssetPath:    path.Clean(DefaultAssetPath),
-		LogFilename:  path.Clean(DefaultLogFilename),
+		PortNumber:       DefaultPortNumber,
+		Hostname:         DefaultHostname,
+		MaxCPUs:          DefaultMaxCPUs,
+		TemplatePath:     path.Clean(DefaultTemplatePath),
+		PostPath:         path.Clean(DefaultPostPath),
+		AssetPath:        path.Clean(DefaultAssetPath),
+		PostFileExt:      DefaultPostFileExt,
+		LogFilename:      path.Clean(DefaultLogFilename),
+		LogFileVerbosity: DefaultLogVerbosity,
+		ConsoleVerbosity: DefaultConsoleVerbosity,
 	}
 }
 

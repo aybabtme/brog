@@ -9,7 +9,7 @@ import (
 
 const (
 	// ConfigFilename where to find the Brog config file.
-	ConfigFilename = "./brog_config.json"
+	ConfigFilename = "brog_config.json"
 	jsPath         = "js/"
 	cssPath        = "css/"
 )
@@ -21,6 +21,9 @@ type packed struct {
 
 func (p *packed) replicateInDir(dirpath string) error {
 	fullpath := path.Clean(dirpath) + string(os.PathSeparator) + p.filename
+	if fileExists(fullpath) {
+		return fmt.Errorf("file '%s' already exists, will not overwrite", fullpath)
+	}
 	return ioutil.WriteFile(fullpath, p.data, 0640)
 }
 
@@ -116,6 +119,9 @@ func CopyBrogBinaries() error {
 // CopyBlankToFilename creates a blank post at the given filename, under the asset
 // path specified by conf
 func CopyBlankToFilename(conf *Config, filename string) error {
-	fullpath := path.Clean(conf.PostPath) + string(os.PathSeparator) + filename
+	if filename == "" {
+		return fmt.Errorf("no filename specified")
+	}
+	fullpath := path.Clean(conf.PostPath) + string(os.PathSeparator) + filename + conf.PostFileExt
 	return ioutil.WriteFile(fullpath, basePostsBlankMd, 0640)
 }

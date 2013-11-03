@@ -36,10 +36,10 @@ func main() {
 			return
 		case Create:
 			followingWords := strings.Join(commands[i+1:], "_")
-			doCreate(followingWords + ".md")
+			doCreate(followingWords)
 			return
 		default:
-			fmt.Printf("Unknown command: %s\n", arg)
+			printPreBrogError("Unknown command: %s.\n", arg)
 		}
 	}
 
@@ -49,15 +49,19 @@ func doInit() {
 	fmt.Println(brush.DarkGray("A dark geometric shape is approaching..."))
 	err := brogger.CopyBrogBinaries()
 	if err != nil {
-		panic(err)
+		printPreBrogError("Couldn't inject brog nanoprobes.\n")
+		printPreBrogError("Message : %v.\n", err)
+		return
 	}
 
 	brog, err := brogger.PrepareBrog()
 	if err != nil {
-		panic(err)
-	} else {
-		brog.Ok("Initiliazing a brog. Resistance is futile.")
+		printPreBrogError("Couldn't prepare brog structure.\n")
+		printPreBrogError("Message : %v.\n", err)
+		return
 	}
+	brog.Ok("Initiliazing a brog. Resistance is futile.")
+
 	defer closeOrPanic(brog)
 	brog.Ok("Brog nanoprobes implanted.")
 }
@@ -65,32 +69,44 @@ func doInit() {
 func doServer() {
 	brog, err := brogger.PrepareBrog()
 	if err != nil {
-		fmt.Printf("%s %v", errPfx, err)
+		printPreBrogError("Couldn't start brog server.\n")
+		printPreBrogError("Message : %v.\n", err)
+		printTryInitMessage()
 		return
 	}
 	defer closeOrPanic(brog)
 
 	err = brog.ListenAndServe()
-	brog.Err("Whoops! %v", err)
+	brog.Err("Whoops! %v.", err)
 
 }
 
 func doCreate(newPostFilename string) {
 	brog, err := brogger.PrepareBrog()
 	if err != nil {
-		fmt.Printf("%s %v", errPfx, err)
+		printPreBrogError("Couldn't create new post.\n")
+		printPreBrogError("Message : %v.\n", err)
+		printTryInitMessage()
 		return
 	}
 	defer closeOrPanic(brog)
 
-	brog.Ok("Brog post '%s' will be assimilated.", newPostFilename)
 	err = brogger.CopyBlankToFilename(brog.Config, newPostFilename)
 	if err != nil {
-		brog.Err("Brog post creation failed, %v", err)
+		brog.Err("Brog post creation failed, %v.", err)
 		brog.Err("Why do you resist?")
 		return
 	}
-	brog.Ok("You will become one with the Borg.")
+	brog.Ok("'%s' will become one with the Brog.", newPostFilename)
+}
+
+func printPreBrogError(format string, args ...interface{}) {
+	errMsg := fmt.Sprintf("%s%s", errPfx, format)
+	fmt.Fprintf(os.Stderr, errMsg, args...)
+}
+
+func printTryInitMessage() {
+	fmt.Printf("Try initializing a brog here, run : brog %s.\n", Init)
 }
 
 func closeOrPanic(brog *brogger.Brog) {

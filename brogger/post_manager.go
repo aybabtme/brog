@@ -80,8 +80,10 @@ func (p *postManager) loadAllPosts() error {
 func (p *postManager) GetAllPosts() []*post {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
+	p.brog.Debug("Getting all posts, got %d", len(p.sortedPosts))
 	postCopy := make([]*post, len(p.sortedPosts))
 	copy(postCopy, p.sortedPosts)
+	p.brog.Debug("Getting all posts, returning %d", len(postCopy))
 	return postCopy
 }
 
@@ -96,34 +98,45 @@ func (p *postManager) GetPost(key string) (*post, bool) {
 }
 
 func (p *postManager) DeletePostWithFilename(filename string) (*post, bool) {
+
 	p.mu.RLock()
+
+	p.brog.Debug("Deleting post by filename '%s', %d posts before", filename, len(p.posts))
 	defer p.mu.RUnlock()
 	for _, post := range p.posts {
 		if post.filename == filename {
 			delete(p.posts, post.GetID())
+			p.brog.Debug("Found post with ID '%s', %d posts after", post.GetID(), len(p.posts))
 			return post, true
 		}
 	}
+
+	p.brog.Warn("Couldn't find post with filename '%s', not deleted", filename)
 	return nil, false
 }
 
 func (p *postManager) SetPost(post *post) {
 	p.mu.Lock()
+	p.brog.Debug("SetPost with id %s, %d posts before", post.GetID(), len(p.posts))
 	p.posts[post.GetID()] = post
+	p.brog.Debug("SetPost, %d posts after", len(p.posts))
 	p.mu.Unlock()
 
 	p.sortPosts()
 }
 
 func (p *postManager) DeletePost(key string) (*post, bool) {
-
 	p.mu.Lock()
+
+	p.brog.Debug("Deleting post '%s', %d posts before", key, len(p.posts))
 	post, ok := p.posts[key]
 	if !ok {
 		p.mu.Unlock()
+		p.brog.Debug("Delete not found '%s'", key)
 		return nil, ok
 	}
 	delete(p.posts, key)
+	p.brog.Debug("Deleted '%s', %d posts left", key, len(p.posts))
 	p.mu.Unlock()
 
 	p.sortPosts()
@@ -132,7 +145,7 @@ func (p *postManager) DeletePost(key string) (*post, bool) {
 }
 
 func (p *postManager) sortPosts() {
-
+	p.brog.Debug("Sorting posts")
 	var postL postList
 
 	p.mu.RLock()
@@ -146,31 +159,33 @@ func (p *postManager) sortPosts() {
 
 	sort.Sort(postL)
 
+	p.brog.Debug("Sorted %d posts", len(postL.posts))
 	p.mu.Lock()
 	p.sortedPosts = postL.posts
 	p.mu.Unlock()
 }
 
 func (p *postManager) Close() error {
+	p.brog.Debug("PostManager closing now")
 	p.die <- struct{}{}
 	return p.watcher.Close()
 }
 
 func (p *postManager) watchForChanges(dirname string) error {
-
 	go func() {
 		for {
 			select {
 			case ev := <-p.watcher.Event:
 				p.processPostEvent(ev)
+				p.brog.Debug("PostManager processed event '%s'", ev.String())
 			case err := <-p.watcher.Error:
-				p.brog.Err("watching posts in '%s', %v", dirname, err)
+				p.brog.Err("PostManager watching posts in '%s', %v", dirname, err)
 			case <-p.die:
 				return
 			}
 		}
 	}()
-
+	p.brog.Debug("PostManager watching for changes on '%s'", dirname)
 	return p.watcher.Watch(dirname)
 
 }
@@ -179,6 +194,7 @@ func (p *postManager) processPostEvent(ev *fsnotify.FileEvent) {
 
 	ext := strings.ToLower(filepath.Ext(ev.Name))
 	switch ext {
+	case p.brog.Config.PostFileExt:
 	case ".md":
 	case ".markdown":
 	case ".mkd":
@@ -219,14 +235,13 @@ func (p *postManager) processPostRename(ev *fsnotify.FileEvent) {
 		return
 	}
 
-	p.brog.Debug("Post '%s': old filename '%s', deleting, %d posts total",
+	p.brog.Debug("Renamed post '%s': old filename '%s', deleting this copy, %d posts total",
 		post.Title, ev.Name, len(p.posts))
 
 	return
 }
 
 func (p *postManager) processPostDelete(ev *fsnotify.FileEvent) {
-
 	post, ok := p.DeletePost(ev.Name)
 
 	if !ok {
@@ -234,12 +249,12 @@ func (p *postManager) processPostDelete(ev *fsnotify.FileEvent) {
 		return
 	}
 
-	p.brog.Debug("Removing post '%s', %d posts left", post.Title, len(p.posts))
+	p.brog.Watch("Deleted post at '%s', %d posts left", post.Title, len(p.posts))
 	return
 }
 
 func (p *postManager) processPostCreate(ev *fsnotify.FileEvent) {
-	p.brog.Debug("New file '%s'", ev.Name)
+	p.brog.Watch("New post at '%s'", ev.Name)
 	err := p.loadFromFile(ev.Name)
 	if err != nil {
 		p.brog.Err("Error loading new post at '%s', %v", ev.Name, err)
@@ -247,15 +262,15 @@ func (p *postManager) processPostCreate(ev *fsnotify.FileEvent) {
 }
 
 func (p *postManager) processPostModify(ev *fsnotify.FileEvent) {
-	p.brog.Debug("Modified file '%s'", ev.Name)
+	p.brog.Watch("Modified file '%s'", ev.Name)
 
 	post, ok := p.DeletePostWithFilename(ev.Name)
 
 	if !ok {
-		p.brog.Warn("File '%s' was unknown", ev.Name)
+		p.brog.Warn("Post at '%s' was unknown", ev.Name)
 	}
 
-	p.brog.Warn("Removing related post '%s', %d posts left", post.Title, len(p.posts))
+	p.brog.Watch("Removing related post titled '%s', %d posts left", post.Title, len(p.posts))
 
 	err := p.loadFromFile(ev.Name)
 	if err != nil {
@@ -271,7 +286,10 @@ func (p *postManager) loadFromFile(filename string) error {
 
 	p.SetPost(post)
 
-	p.brog.Debug("Loaded post '%s' from file '%s', %d posts total", post.Title, filename, len(p.posts))
+	p.brog.Watch("Loaded post '%s' from file '%s', %d posts total", post.Title, filename, len(p.posts))
 
+	if post.Invisible {
+		p.brog.Watch("'%s' is invisible.", post.Title)
+	}
 	return nil
 }

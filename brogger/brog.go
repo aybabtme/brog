@@ -30,9 +30,9 @@ func PrepareBrog() (*Brog, error) {
 		return nil, fmt.Errorf("preparing brog's configuration, %v", err)
 	}
 
-	logMux, err := makeLogMux(config.LogFilename)
+	logMux, err := makeLogMux(config)
 	if err != nil {
-		return nil, fmt.Errorf("making log multiplex on path %s, %v", config.LogFilename, err)
+		return nil, fmt.Errorf("making log multiplexer on path %s, %v", config.LogFilename, err)
 	}
 
 	brog := &Brog{
@@ -95,7 +95,7 @@ func (b *Brog) ListenAndServe() error {
 }
 
 func (b *Brog) startWatchers() error {
-	b.Debug("starting watchers")
+	b.Debug("Starting watchers")
 
 	tmplMngr, err := startTemplateManager(b, b.Config.TemplatePath)
 	if err != nil {
@@ -113,6 +113,7 @@ func (b *Brog) startWatchers() error {
 
 // heartBeat answers 200 to any request.
 func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
+	b.Debug("Hearbeat!")
 	rw.WriteHeader(http.StatusOK)
 }
 
@@ -120,6 +121,7 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	defer statCount(b, req)()
 
 	posts := b.postMngr.GetAllPosts()
+	b.Debug("Serving %d posts to requester", len(posts))
 	b.tmplMngr.DoWithIndex(func(t *template.Template) {
 		if err := t.Execute(rw, posts); err != nil {
 			b.Err("serving index request, %v", err)
