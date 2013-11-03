@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type Post struct {
+type post struct {
 	filename string
 	id       string
 
@@ -22,23 +22,22 @@ type Post struct {
 	Content   string    // Loaded from the Markdown part
 }
 
-func (p *Post) GetID() string {
+func (p *post) GetID() string {
 	return p.id
 }
 
-func (p *Post) setID() {
+func (p *post) setID() {
 	p.id = url.QueryEscape(stripExtension(p.filename))
 }
 
-func NewPostFromFile(filename string) (*Post, error) {
+func newPostFromFile(filename string) (*post, error) {
 
-	post := Post{filename: filename}
+	post := post{filename: filename}
 
 	postFile, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("opening file '%s', %v", filename, err)
 	}
-	defer postFile.Close()
 
 	dec := json.NewDecoder(postFile)
 	if err = dec.Decode(&post); err != nil {
@@ -57,22 +56,26 @@ func NewPostFromFile(filename string) (*Post, error) {
 
 	post.setID()
 
+	if err := postFile.Close(); err != nil {
+		return &post, fmt.Errorf("closing post file, %v", err)
+	}
+
 	return &post, nil
 }
 
-type PostList struct {
-	posts []*Post
+type postList struct {
+	posts []*post
 }
 
-func (p PostList) Len() int {
+func (p postList) Len() int {
 	return len(p.posts)
 }
 
-func (p PostList) Less(i, j int) bool {
+func (p postList) Less(i, j int) bool {
 	// Sort in most-recent order
 	return p.posts[i].Date.After(p.posts[j].Date)
 }
 
-func (p PostList) Swap(i, j int) {
+func (p postList) Swap(i, j int) {
 	p.posts[i], p.posts[j] = p.posts[j], p.posts[i]
 }

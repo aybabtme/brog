@@ -10,8 +10,6 @@ import (
 )
 
 const (
-	// ConfigFilename where to find the Brog config file.
-	ConfigFilename = "./brog_config.json"
 	// JSONIndentCount how many spaces to indent the config file
 	JSONIndentCount = 3
 )
@@ -27,6 +25,15 @@ var (
 	DefaultLogFilename  = "brog.log"
 )
 
+func mustHave(value string, err error) string {
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+// Config contains all the settings that a Brog uses to watch and create
+// and serve posts, log events and execute in general.
 type Config struct {
 	PortNumber   int    `json:"portNumber"`
 	Hostname     string `json:"hostName"`
@@ -58,23 +65,11 @@ func (c *Config) selfValidate() error {
 }
 
 func loadConfig() (*Config, error) {
-	if fileExists(ConfigFilename) {
-		return loadFromFile()
+	if !fileExists(ConfigFilename) {
+		return nil, fmt.Errorf("There is no Brog config file here.")
+
 	}
-
-	c := &Config{
-		PortNumber:   DefaultPortNumber,
-		Hostname:     DefaultHostname,
-		MaxCPUs:      DefaultMaxCPUs,
-		TemplatePath: path.Clean(DefaultTemplatePath),
-		PostPath:     path.Clean(DefaultPostPath),
-		AssetPath:    path.Clean(DefaultAssetPath),
-		LogFilename:  path.Clean(DefaultLogFilename),
-	}
-
-	err := persistToFile(ConfigFilename, c)
-
-	return c, err
+	return loadFromFile()
 }
 
 func fileExists(filename string) bool {
@@ -89,7 +84,6 @@ func loadFromFile() (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening config file '%s', %v", ConfigFilename, err)
 	}
-	defer configRd.Close()
 
 	jsonDec := json.NewDecoder(configRd)
 	config := Config{}
@@ -104,10 +98,26 @@ func loadFromFile() (*Config, error) {
 		return nil, fmt.Errorf("validating config settings, %v", err)
 	}
 
+	if err := configRd.Close(); err != nil {
+		return &config, fmt.Errorf("closing config file, %v", err)
+	}
+
 	return &config, nil
 }
 
-func persistToFile(filename string, config *Config) error {
+func newDefaultConfig() *Config {
+	return &Config{
+		PortNumber:   DefaultPortNumber,
+		Hostname:     DefaultHostname,
+		MaxCPUs:      DefaultMaxCPUs,
+		TemplatePath: path.Clean(DefaultTemplatePath),
+		PostPath:     path.Clean(DefaultPostPath),
+		AssetPath:    path.Clean(DefaultAssetPath),
+		LogFilename:  path.Clean(DefaultLogFilename),
+	}
+}
+
+func (config *Config) persistToFile(filename string) error {
 
 	jsonData, err := json.MarshalIndent(config, "", strings.Repeat(" ", JSONIndentCount))
 	if err != nil {
@@ -118,18 +128,15 @@ func persistToFile(filename string, config *Config) error {
 	if err != nil {
 		return fmt.Errorf("creating file '%s' for configuration, %v", filename, err)
 	}
-	defer confFile.Close()
 
 	_, err = confFile.WriteString(string(jsonData))
 	if err != nil {
 		return fmt.Errorf("writing configuration to file '%s', %v", filename, err)
 	}
-	return nil
-}
 
-func mustHave(value string, err error) string {
-	if err != nil {
-		panic(err)
+	if err := confFile.Close(); err != nil {
+		return fmt.Errorf("closing config file '%s', %v", filename, err)
 	}
-	return value
+
+	return nil
 }

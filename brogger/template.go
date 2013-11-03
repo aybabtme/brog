@@ -22,7 +22,7 @@ const (
 	footerTmplName = "footer.gohtml"
 )
 
-type TemplateManager struct {
+type templateManager struct {
 	brog *Brog
 	path string
 
@@ -34,14 +34,14 @@ type TemplateManager struct {
 	post  *template.Template
 }
 
-func StartTemplateManager(brog *Brog, templPath string) (*TemplateManager, error) {
+func startTemplateManager(brog *Brog, templPath string) (*templateManager, error) {
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("getting template watcher, %v", err)
 	}
 
-	tmpMngr := &TemplateManager{
+	tmpMngr := &templateManager{
 		brog:    brog,
 		path:    templPath,
 		watcher: watcher,
@@ -53,29 +53,31 @@ func StartTemplateManager(brog *Brog, templPath string) (*TemplateManager, error
 		return nil, fmt.Errorf("initializing templates, %v", err)
 	}
 
-	tmpMngr.watchForChanges(templPath)
+	if err := tmpMngr.watchForChanges(templPath); err != nil {
+		return nil, fmt.Errorf("starting watch for changes on '%s', %v", templPath, err)
+	}
 
 	return tmpMngr, nil
 }
 
-func (t *TemplateManager) DoWithPost(do func(*template.Template)) {
+func (t *templateManager) DoWithPost(do func(*template.Template)) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	do(t.post)
 }
 
-func (t *TemplateManager) DoWithIndex(do func(*template.Template)) {
+func (t *templateManager) DoWithIndex(do func(*template.Template)) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	do(t.index)
 }
 
-func (t *TemplateManager) Close() error {
+func (t *templateManager) Close() error {
 	t.die <- struct{}{}
 	return t.watcher.Close()
 }
 
-func (t *TemplateManager) initializeAppTmpl() error {
+func (t *templateManager) initializeAppTmpl() error {
 
 	prefix := func(filename string) string {
 		return path.Join(t.brog.Config.TemplatePath, filename)
@@ -118,7 +120,7 @@ func (t *TemplateManager) initializeAppTmpl() error {
 	return nil
 }
 
-func (t *TemplateManager) watchForChanges(dirname string) error {
+func (t *templateManager) watchForChanges(dirname string) error {
 	go func() {
 		for {
 			select {
@@ -135,7 +137,7 @@ func (t *TemplateManager) watchForChanges(dirname string) error {
 	return t.watcher.Watch(dirname)
 }
 
-func (t *TemplateManager) processTemplateEvent(ev *fsnotify.FileEvent) {
+func (t *templateManager) processTemplateEvent(ev *fsnotify.FileEvent) {
 	ext := strings.ToLower(filepath.Ext(ev.Name))
 	switch ext {
 	case ".gohtml":

@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-type PostManager struct {
+type postManager struct {
 	brog *Brog  // Reference to the Brog app for logging purpose
 	path string // Path on which the manager watch for post changes
 
@@ -20,23 +20,23 @@ type PostManager struct {
 	die     chan struct{}     // To kill the watcher goroutine
 
 	mu          sync.RWMutex     // Locks the `posts` and `sortedPosts`
-	posts       map[string]*Post // All the posts, accessed by filename
-	sortedPosts []*Post          // All the posts in most recent order
+	posts       map[string]*post // All the posts, accessed by filename
+	sortedPosts []*post          // All the posts in most recent order
 }
 
-func StartPostManager(brog *Brog, filepath string) (*PostManager, error) {
+func startPostManager(brog *Brog, filepath string) (*postManager, error) {
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("getting post watcher, %v", err)
 	}
 
-	postMngr := &PostManager{
+	postMngr := &postManager{
 		mu:          sync.RWMutex{},
 		brog:        brog,
 		path:        filepath,
-		posts:       make(map[string]*Post),
-		sortedPosts: []*Post{},
+		posts:       make(map[string]*post),
+		sortedPosts: []*post{},
 		watcher:     watcher,
 		die:         make(chan struct{}),
 	}
@@ -47,12 +47,14 @@ func StartPostManager(brog *Brog, filepath string) (*PostManager, error) {
 	}
 
 	postMngr.sortPosts()
-	postMngr.watchForChanges(filepath)
+	if err := postMngr.watchForChanges(filepath); err != nil {
+		return nil, fmt.Errorf("starting watch for changes on '%s', %v", filepath, err)
+	}
 
 	return postMngr, nil
 }
 
-func (p *PostManager) loadAllPosts() error {
+func (p *postManager) loadAllPosts() error {
 	fileInfos, err := ioutil.ReadDir(p.path)
 	if err != nil {
 		return fmt.Errorf("listing directory '%s', %v", p.path, err)
@@ -75,15 +77,15 @@ func (p *PostManager) loadAllPosts() error {
 	return nil
 }
 
-func (p *PostManager) GetAllPosts() []*Post {
+func (p *postManager) GetAllPosts() []*post {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	postCopy := make([]*Post, len(p.sortedPosts))
+	postCopy := make([]*post, len(p.sortedPosts))
 	copy(postCopy, p.sortedPosts)
 	return postCopy
 }
 
-func (p *PostManager) GetPost(key string) (*Post, bool) {
+func (p *postManager) GetPost(key string) (*post, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	post, ok := p.posts[key]
@@ -93,7 +95,7 @@ func (p *PostManager) GetPost(key string) (*Post, bool) {
 	return post, ok
 }
 
-func (p *PostManager) DeletePostWithFilename(filename string) (*Post, bool) {
+func (p *postManager) DeletePostWithFilename(filename string) (*post, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	for _, post := range p.posts {
@@ -105,7 +107,7 @@ func (p *PostManager) DeletePostWithFilename(filename string) (*Post, bool) {
 	return nil, false
 }
 
-func (p *PostManager) SetPost(post *Post) {
+func (p *postManager) SetPost(post *post) {
 	p.mu.Lock()
 	p.posts[post.GetID()] = post
 	p.mu.Unlock()
@@ -113,7 +115,7 @@ func (p *PostManager) SetPost(post *Post) {
 	p.sortPosts()
 }
 
-func (p *PostManager) DeletePost(key string) (*Post, bool) {
+func (p *postManager) DeletePost(key string) (*post, bool) {
 
 	p.mu.Lock()
 	post, ok := p.posts[key]
@@ -129,9 +131,9 @@ func (p *PostManager) DeletePost(key string) (*Post, bool) {
 	return post, ok
 }
 
-func (p *PostManager) sortPosts() {
+func (p *postManager) sortPosts() {
 
-	var postL PostList
+	var postL postList
 
 	p.mu.RLock()
 	for _, val := range p.posts {
@@ -149,12 +151,12 @@ func (p *PostManager) sortPosts() {
 	p.mu.Unlock()
 }
 
-func (p *PostManager) Close() error {
+func (p *postManager) Close() error {
 	p.die <- struct{}{}
 	return p.watcher.Close()
 }
 
-func (p *PostManager) watchForChanges(dirname string) error {
+func (p *postManager) watchForChanges(dirname string) error {
 
 	go func() {
 		for {
@@ -173,7 +175,7 @@ func (p *PostManager) watchForChanges(dirname string) error {
 
 }
 
-func (p *PostManager) processPostEvent(ev *fsnotify.FileEvent) {
+func (p *postManager) processPostEvent(ev *fsnotify.FileEvent) {
 
 	ext := strings.ToLower(filepath.Ext(ev.Name))
 	switch ext {
@@ -208,7 +210,7 @@ func (p *PostManager) processPostEvent(ev *fsnotify.FileEvent) {
 	p.brog.Err("FileEvent '%s' is not recognized", ev.String())
 }
 
-func (p *PostManager) processPostRename(ev *fsnotify.FileEvent) {
+func (p *postManager) processPostRename(ev *fsnotify.FileEvent) {
 
 	post, ok := p.DeletePost(ev.Name)
 
@@ -223,7 +225,7 @@ func (p *PostManager) processPostRename(ev *fsnotify.FileEvent) {
 	return
 }
 
-func (p *PostManager) processPostDelete(ev *fsnotify.FileEvent) {
+func (p *postManager) processPostDelete(ev *fsnotify.FileEvent) {
 
 	post, ok := p.DeletePost(ev.Name)
 
@@ -236,7 +238,7 @@ func (p *PostManager) processPostDelete(ev *fsnotify.FileEvent) {
 	return
 }
 
-func (p *PostManager) processPostCreate(ev *fsnotify.FileEvent) {
+func (p *postManager) processPostCreate(ev *fsnotify.FileEvent) {
 	p.brog.Debug("New file '%s'", ev.Name)
 	err := p.loadFromFile(ev.Name)
 	if err != nil {
@@ -244,7 +246,7 @@ func (p *PostManager) processPostCreate(ev *fsnotify.FileEvent) {
 	}
 }
 
-func (p *PostManager) processPostModify(ev *fsnotify.FileEvent) {
+func (p *postManager) processPostModify(ev *fsnotify.FileEvent) {
 	p.brog.Debug("Modified file '%s'", ev.Name)
 
 	post, ok := p.DeletePostWithFilename(ev.Name)
@@ -261,8 +263,8 @@ func (p *PostManager) processPostModify(ev *fsnotify.FileEvent) {
 	}
 }
 
-func (p *PostManager) loadFromFile(filename string) error {
-	post, err := NewPostFromFile(filename)
+func (p *postManager) loadFromFile(filename string) error {
+	post, err := newPostFromFile(filename)
 	if err != nil {
 		return fmt.Errorf("loading post from file '%s', %v", filename, err)
 	}
