@@ -28,6 +28,7 @@ var allAssets = map[string]packed{
 
 	// Base files
 	".gitignore": {".gitignore", "./", baseGitignore},
+	"README.md":  {"README.md", "./", baseREADMEMd},
 }
 
 var allTemplates = map[string]packed{
