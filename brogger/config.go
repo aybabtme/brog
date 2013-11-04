@@ -32,7 +32,7 @@ var (
 	DefaultMultilingual     = false // False because blogs are usually unilingual
 )
 
-var DefaultLanguages = { "en" }
+var DefaultLanguages = []string{ "en" }
 
 // Config contains all the settings that a Brog uses to watch and create
 // and serve posts, log events and execute in general.

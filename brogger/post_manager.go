@@ -87,12 +87,14 @@ func (p *postManager) GetAllPosts() []*post {
 	return postCopy
 }
 
-func (p *postManager) GetAllPostsWithLanguage(lang string) []*post {
-	var i int
-	var j int
+func (p *postManager) GetAllPostsWithLanguage(lang string, multilingual bool) []*post {
+	if !multilingual {
+		return p.GetAllPosts()
+	}
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	for j, val := range p.sortedPosts {
+	var postCopy []*post
+	for _, val := range p.sortedPosts {
 		if val.Language == lang {
 			postCopy = append(postCopy, val)
 		}

@@ -132,45 +132,37 @@ func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
 func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	defer statCount(b, req)()
 
-	var posts []*post
 	langSet := true
 	if b.Config.Multilingual {
-		var i int
 		langSet = false
-		for i, val := b.Config.Languages {
+		for _, val := range b.Config.Languages {
 			if strings.Contains(req.URL.RawQuery, val) {
 				langSet = true
 				break
 			}
 		}
-		if langSet {
-			posts = b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery)
-			b.Debug("Serving %d posts with language %s to requester", len(posts), req.URL.RawQuery)
-		} else {
-			posts = nil
+		if !langSet {
 			b.Debug("Language not set for multilingual blog")
+			b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
+				b.Debug("Sending language selection screen")
+				if err := t.Execute(rw, b.Config.Languages); err != nil {
+					b.Err("serving index, language select, request, %v", err)
+					http.Error(rw, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			})
+			return
 		}
-	} else {
-		posts = b.postMngr.GetAllPosts()
-		b.Debug("Serving %d posts to requester", len(posts))
 	}
-	if langSet {
-		b.tmplMngr.DoWithIndex(func(t *template.Template) {
-			if err := t.Execute(rw, posts); err != nil {
-				b.Err("serving index request, %v", err)
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		})
-	} else {
-		b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
-			b.Debug("Sending language selection screen")
-			if err := t.Execute(rw, b.Config.Languages); err != nil {
-				b.Err("serving index, language select, request, %v", err)
-				return
-			}
-		})
-	}
+	posts := b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery, b.Config.Multilingual)
+	b.Debug("Serving %d posts with language %s to requester", len(posts), req.URL.RawQuery)
+	b.tmplMngr.DoWithIndex(func(t *template.Template) {
+		if err := t.Execute(rw, posts); err != nil {
+			b.Err("serving index request, %v", err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
 }
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
