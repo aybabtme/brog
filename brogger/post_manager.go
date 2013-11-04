@@ -87,10 +87,7 @@ func (p *postManager) GetAllPosts() []*post {
 	return postCopy
 }
 
-func (p *postManager) GetAllPostsWithLanguage(lang string, multilingual bool) []*post {
-	if !multilingual {
-		return p.GetAllPosts()
-	}
+func (p *postManager) GetAllPostsWithLanguage(lang string) []*post {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	var postCopy []*post

@@ -106,6 +106,29 @@ func (b *Brog) ListenAndServe() error {
 	return http.ListenAndServe(addr, nil)
 }
 
+func (b *Brog) serveLanguageSelectPage(rw http.ResponseWriter, lang string) bool {
+	langSet := false
+	for _, val := range b.Config.Languages {
+		if strings.Contains(lang, val) {
+			langSet = true
+			break
+		}
+	}
+	if !langSet {
+		b.Debug("Language not set for multilingual blog")
+		b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
+			b.Debug("Sending language selection screen")
+			if err := t.Execute(rw, b.Config.Languages); err != nil {
+				b.Err("serving index, language select, request, %v", err)
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		})
+		return true
+	}
+	return false
+}
+
 func (b *Brog) startWatchers() error {
 	b.Debug("Starting watchers")
 
@@ -132,29 +155,15 @@ func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
 func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	defer statCount(b, req)()
 
-	langSet := true
+	var posts []*post
 	if b.Config.Multilingual {
-		langSet = false
-		for _, val := range b.Config.Languages {
-			if strings.Contains(req.URL.RawQuery, val) {
-				langSet = true
-				break
-			}
-		}
-		if !langSet {
-			b.Debug("Language not set for multilingual blog")
-			b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
-				b.Debug("Sending language selection screen")
-				if err := t.Execute(rw, b.Config.Languages); err != nil {
-					b.Err("serving index, language select, request, %v", err)
-					http.Error(rw, err.Error(), http.StatusInternalServerError)
-					return
-				}
-			})
+		if b.serveLanguageSelectPage(rw, req.URL.RawQuery) {
 			return
 		}
+		posts = b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery)
+ 	} else {
+		posts = b.postMngr.GetAllPosts()
 	}
-	posts := b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery, b.Config.Multilingual)
 	b.Debug("Serving %d posts with language %s to requester", len(posts), req.URL.RawQuery)
 	b.tmplMngr.DoWithIndex(func(t *template.Template) {
 		if err := t.Execute(rw, posts); err != nil {
