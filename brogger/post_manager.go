@@ -259,6 +259,7 @@ func (p *postManager) processPostCreate(ev *fsnotify.FileEvent) {
 	if err != nil {
 		p.brog.Err("Error loading new post at '%s', %v", ev.Name, err)
 	}
+	p.brog.Watch("Assimilation completed. '%s' has become one with the brog.", ev.Name)
 }
 
 func (p *postManager) processPostModify(ev *fsnotify.FileEvent) {

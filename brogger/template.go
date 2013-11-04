@@ -148,7 +148,13 @@ func (t *templateManager) processTemplateEvent(ev *fsnotify.FileEvent) {
 		return
 	}
 
-	if ev.IsModify() || ev.IsCreate() {
+	if ev.IsCreate() {
+		// Nothing to do, all usefull templates files MUST exist at this
+		// time or brog would not have started.
+		return
+	}
+
+	if ev.IsModify() {
 		t.processTemplateModify(ev)
 		return
 	}
@@ -183,10 +189,10 @@ func (t *templateManager) processTemplateModify(ev *fsnotify.FileEvent) {
 	case footerTmplName:
 		replicator = footerPaktTmpl.rewriteFileOnDir
 	}
-	t.brog.Watch("Template '%s' changed, parsing templates again", ev.Name)
+	t.brog.Watch("Template '%s' changed, parsing templates again.", ev.Name)
 	err := t.initializeAppTmpl()
 	if err == nil {
-		// All is well
+		t.brog.Watch("Assimilation completed. '%s' has become one with the brog.", ev.Name)
 		return
 	}
 	t.brog.Err("Failed reinitialization of templates, %v", err)
@@ -222,19 +228,19 @@ func (t *templateManager) processTemplateDelete(ev *fsnotify.FileEvent) {
 		// Don't care, we don't use this template
 		return
 	case appTmplName:
-		replicator = appPaktTmpl.rewriteFileOnDir
+		replicator = appPaktTmpl.replicateInDir
 	case indexTmplName:
-		replicator = indexPaktTmpl.rewriteFileOnDir
+		replicator = indexPaktTmpl.replicateInDir
 	case postTmplName:
-		replicator = postPaktTmpl.rewriteFileOnDir
+		replicator = postPaktTmpl.replicateInDir
 	case styleTmplName:
-		replicator = stylePaktTmpl.rewriteFileOnDir
+		replicator = stylePaktTmpl.replicateInDir
 	case jsTmplName:
-		replicator = javascriptPaktTmpl.rewriteFileOnDir
+		replicator = javascriptPaktTmpl.replicateInDir
 	case headerTmplName:
-		replicator = headerPaktTmpl.rewriteFileOnDir
+		replicator = headerPaktTmpl.replicateInDir
 	case footerTmplName:
-		replicator = footerPaktTmpl.rewriteFileOnDir
+		replicator = footerPaktTmpl.replicateInDir
 	}
 
 	t.brog.Err("Brog detected the destruction of a vital part: %s", ev.Name)

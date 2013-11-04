@@ -105,9 +105,9 @@ func makeLogMux(conf *Config) (*logMux, error) {
 		brush.DarkGray("]"))
 
 	errPfx := fmt.Sprintf("%s%s%s ",
-		brush.DarkYellow("["),
+		brush.DarkGray("["),
 		brush.Red("ERROR"),
-		brush.DarkYellow("]"))
+		brush.DarkGray("]"))
 
 	return &logMux{
 		logFile:        file,

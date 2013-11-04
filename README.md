@@ -27,6 +27,21 @@ Config
 
 Look at the `brog_config.json` file, it should be pretty clear.
 
+Something you should know
+-------------------------
+
+By default, `brog` will regenerate any harm caused to its vital structure.
+That is, when `brog server` runs, it watches its templates and reload them
+at every change.
+
+* If a vital template has been deleted or renamed, `brog` will regenerate the
+template at its original location.
+* If a vital template has been modified and `brog` find that it is
+corrupted (fails to parse), `brog` will repeal the threat and rewrite the file
+with its default version.
+
+You can change this setting in `brog_config.json`.
+
 Development
 -----------
 
