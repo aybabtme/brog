@@ -20,10 +20,10 @@ clean:
 # Sets up a system to be able to build brog
 configure: clean
 	@echo "> Preparing system for build."
-	go get -u github.com/chsc/bin2go
-	go get -u github.com/kisielk/errcheck
-	go get -u code.google.com/p/go.tools/cmd/vet
-	go get -u github.com/golang/lint
+	go get github.com/chsc/bin2go
+	go get github.com/kisielk/errcheck
+	go get code.google.com/p/go.tools/cmd/vet
+	go get github.com/golang/lint
 
 # Perform all the steps to install a clean build of brog
 install: configure all
