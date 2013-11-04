@@ -19,6 +19,7 @@ type post struct {
 	Author    string    `json:"author"`
 	Invisible bool      `json:"invisible"`
 	Abstract  string    `json:"abstract"`
+	Language  string    `json:"language"`
 	Content   string    // Loaded from the Markdown part
 }
 
