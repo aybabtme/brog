@@ -15,7 +15,6 @@ clean:
 	rm -rf assets
 	rm -f brog_config.json
 	rm -f brog.log
-	rm -f brogger/base_assets.go
 
 # Sets up a system to be able to build brog
 configure: clean

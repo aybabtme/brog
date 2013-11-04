@@ -76,10 +76,6 @@ func (c *Config) selfValidate() error {
 		return fmt.Errorf("invalid port range (%d)", c.ProdPortNumber)
 	}
 
-	if c.Hostname == "" {
-		return fmt.Errorf("invalid hostname (%s)", c.Hostname)
-	}
-
 	if c.MaxCPUs < 0 {
 		return fmt.Errorf("invalid CPU count (%d)", c.MaxCPUs)
 	}
