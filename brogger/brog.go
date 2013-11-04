@@ -106,7 +106,7 @@ func (b *Brog) ListenAndServe() error {
 	return http.ListenAndServe(addr, nil)
 }
 
-func (b *Brog) serveLanguageSelectPage(rw http.ResponseWriter, lang string) bool {
+func (b *Brog) validLangInQuery(lang string) bool {
 	langSet := false
 	for _, val := range b.Config.Languages {
 		if strings.Contains(lang, val) {
@@ -114,19 +114,7 @@ func (b *Brog) serveLanguageSelectPage(rw http.ResponseWriter, lang string) bool
 			break
 		}
 	}
-	if !langSet {
-		b.Debug("Language not set for multilingual blog")
-		b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
-			b.Debug("Sending language selection screen")
-			if err := t.Execute(rw, b.Config.Languages); err != nil {
-				b.Err("serving index, language select, request, %v", err)
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		})
-		return true
-	}
-	return false
+	return langSet
 }
 
 func (b *Brog) startWatchers() error {
@@ -157,7 +145,8 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 	var posts []*post
 	if b.Config.Multilingual {
-		if b.serveLanguageSelectPage(rw, req.URL.RawQuery) {
+		if !b.validLangInQuery(req.URL.RawQuery) {
+			b.langSelectFunc(rw)
 			return
 		}
 		posts = b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery)
@@ -168,6 +157,18 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	b.tmplMngr.DoWithIndex(func(t *template.Template) {
 		if err := t.Execute(rw, posts); err != nil {
 			b.Err("serving index request, %v", err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func (b *Brog) langSelectFunc(rw http.ResponseWriter) {
+	b.Debug("Language not set for multilingual blog")
+	b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
+		b.Debug("Sending language selection screen")
+		if err := t.Execute(rw, b.Config.Languages); err != nil {
+			b.Err("serving index, language select, request, %v", err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
