@@ -30,6 +30,10 @@ Look at the `brog_config.json` file, it should be pretty clear.
 Development
 -----------
 
+You need to [have `GOPATH` properly setup](http://golang.org/doc/code.html#GOPATH).
+Additionally, you need to have `$GOPATH/bin` in your `PATH`, because some tools
+in the build scripts really on the use of go tools.
+
 To install `brog` on your system:
 
 ```
