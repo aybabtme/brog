@@ -57,8 +57,11 @@ func main() {
 			doInit()
 			return
 		case Server:
-			prodOption := commands[i+1]
-			doServer(prodOption)
+			if len(commands) > i+1 {
+				doServer(commands[i+1] == "prod")
+			} else {
+				doServer(false)
+			}
 			return
 		case Create:
 			followingWords := strings.Join(commands[i+1:], "_")
@@ -93,9 +96,7 @@ func doInit() {
 	brog.Ok("Brog nanoprobes implanted.")
 }
 
-func doServer(prodOption string) {
-
-	isProd := prodOption == "prod"
+func doServer(isProd bool) {
 
 	brog, err := brogger.PrepareBrog(isProd)
 	if err != nil {
