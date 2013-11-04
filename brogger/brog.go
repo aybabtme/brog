@@ -94,9 +94,9 @@ func (b *Brog) ListenAndServe() error {
 	}
 
 	http.HandleFunc("/heartbeat", b.heartBeat)
-	http.HandleFunc("/", b.indexFunc)
 	http.HandleFunc("/posts/", b.postFunc)
-	http.Handle("/assets", http.StripPrefix("/assets", http.FileServer(http.Dir(b.Config.AssetPath))))
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(b.Config.AssetPath))))
+	http.HandleFunc("/", b.indexFunc)
 
 	b.Ok("Assimilation completed.")
 	if b.isProd {
@@ -136,6 +136,7 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	b.tmplMngr.DoWithIndex(func(t *template.Template) {
 		if err := t.Execute(rw, posts); err != nil {
 			b.Err("serving index request, %v", err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -155,6 +156,7 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 	b.tmplMngr.DoWithPost(func(t *template.Template) {
 		if err := t.Execute(rw, post); err != nil {
 			b.Err("serving post request for ID=%s, %v", postID, err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	})
