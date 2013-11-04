@@ -15,6 +15,29 @@ const (
 	Create = "create"
 	// Server starts brog at the current path
 	Server = "server"
+	// Help shows the usage string
+	Help = "help"
+
+	usage = `usage: brog [init|server|create] [new post name]
+
+'brog' is a tool to initialize brog structures, serve the content
+of brog structures and create new posts in a brog structure.
+
+The following are brog's valid commands with the arguments they take :
+
+    brog init             Takes no argument, creates a new brog struc-
+                          ture at the current working directory.
+
+    brog server           Takes no argument, starts serving the brog
+                          structure at the current location and watch
+                          for changes in the template and post folders
+                          specified by the config file.
+
+    brog create [name]    Creates a blank post in file [name], in the
+                          location specified by the config file.
+
+    brog help             Shows this message.
+`
 )
 
 var (
@@ -38,11 +61,12 @@ func main() {
 			followingWords := strings.Join(commands[i+1:], "_")
 			doCreate(followingWords)
 			return
+		case Help:
 		default:
 			printPreBrogError("Unknown command: %s.\n", arg)
 		}
 	}
-
+	fmt.Println(usage)
 }
 
 func doInit() {

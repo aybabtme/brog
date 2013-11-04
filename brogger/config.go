@@ -26,6 +26,8 @@ var (
 	DefaultLogFilename      = "brog.log"
 	DefaultLogVerbosity     = "watch"
 	DefaultConsoleVerbosity = "watch"
+	DefaultRewriteInvalid   = true // True so that brog has stable default
+	DefaultRewriteMissing   = true // True so that brog has stable default
 )
 
 // Config contains all the settings that a Brog uses to watch and create
@@ -41,6 +43,25 @@ type Config struct {
 	LogFilename      string `json:"logFilename"`
 	LogFileVerbosity string `json:"logFileVerbosity"`
 	ConsoleVerbosity string `json:"consoleVerbosity"`
+	RewriteInvalid   bool   `json:"rewriteInvalid"`
+	RewriteMissing   bool   `json:"rewriteMissing"`
+}
+
+func newDefaultConfig() *Config {
+	return &Config{
+		PortNumber:       DefaultPortNumber,
+		Hostname:         DefaultHostname,
+		MaxCPUs:          DefaultMaxCPUs,
+		TemplatePath:     path.Clean(DefaultTemplatePath),
+		PostPath:         path.Clean(DefaultPostPath),
+		AssetPath:        path.Clean(DefaultAssetPath),
+		PostFileExt:      DefaultPostFileExt,
+		LogFilename:      path.Clean(DefaultLogFilename),
+		LogFileVerbosity: DefaultLogVerbosity,
+		ConsoleVerbosity: DefaultConsoleVerbosity,
+		RewriteInvalid:   DefaultRewriteInvalid,
+		RewriteMissing:   DefaultRewriteMissing,
+	}
 }
 
 func (c *Config) selfValidate() error {
@@ -106,21 +127,6 @@ func loadFromFile() (*Config, error) {
 	}
 
 	return &config, nil
-}
-
-func newDefaultConfig() *Config {
-	return &Config{
-		PortNumber:       DefaultPortNumber,
-		Hostname:         DefaultHostname,
-		MaxCPUs:          DefaultMaxCPUs,
-		TemplatePath:     path.Clean(DefaultTemplatePath),
-		PostPath:         path.Clean(DefaultPostPath),
-		AssetPath:        path.Clean(DefaultAssetPath),
-		PostFileExt:      DefaultPostFileExt,
-		LogFilename:      path.Clean(DefaultLogFilename),
-		LogFileVerbosity: DefaultLogVerbosity,
-		ConsoleVerbosity: DefaultConsoleVerbosity,
-	}
 }
 
 func (config *Config) persistToFile(filename string) error {

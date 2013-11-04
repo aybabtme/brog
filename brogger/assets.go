@@ -27,6 +27,11 @@ func (p *packed) replicateInDir(dirpath string) error {
 	return ioutil.WriteFile(fullpath, p.data, 0640)
 }
 
+func (p *packed) rewriteFileOnDir(dirpath string) error {
+	fullpath := path.Clean(dirpath) + string(os.PathSeparator) + p.filename
+	return ioutil.WriteFile(fullpath, p.data, 0640)
+}
+
 // Base templates
 var (
 	appPaktTmpl        = packed{appTmplName, baseTemplatesApplicationGohtml}
