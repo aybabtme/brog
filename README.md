@@ -14,11 +14,43 @@ go get github.com/aybabtme/brog
 Use `brog`.
 ```bash
 cd your/blog/path
-brog create # Creates brog_config.json, brog.log, templates/ and post/sample.md
-brog        # Creates files if missing, start brog
+# Creates brog files, required to run the brog
+brog init
+# Creates a new brog post named my_post.md
+brog create my post
+# Starts serving the brog at current location.
+brog server
 ```
 
 Config
 ------
 
 Look at the `brog_config.json` file, it should be pretty clear.
+
+Development
+-----------
+
+To install `brog` on your system:
+
+```
+make install
+```
+
+To build `brog` for the first time (not required if you `make install`):
+
+```bash
+make configure
+make
+```
+
+To do a normal build:
+
+```
+make
+```
+
+To remove artifacts resulting in a build/run at the root folder of `brog`:
+
+```
+make clean
+```
