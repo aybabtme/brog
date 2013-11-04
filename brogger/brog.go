@@ -13,6 +13,7 @@ import (
 // brog posts and watches for changes in posts and templates.
 type Brog struct {
 	*logMux
+	isProd   bool
 	Config   *Config
 	tmplMngr *templateManager
 	postMngr *postManager
@@ -24,7 +25,7 @@ type Brog struct {
 // config file.
 // If anything goes wrong during that process, it will return an error
 // explaining where it happened.
-func PrepareBrog() (*Brog, error) {
+func PrepareBrog(isProd bool) (*Brog, error) {
 	config, err := loadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("preparing brog's configuration, %v", err)
@@ -38,6 +39,7 @@ func PrepareBrog() (*Brog, error) {
 	brog := &Brog{
 		logMux: logMux,
 		Config: config,
+		isProd: isProd,
 	}
 
 	return brog, nil
@@ -76,7 +78,13 @@ func (b *Brog) ListenAndServe() error {
 
 	runtime.GOMAXPROCS(b.Config.MaxCPUs)
 
-	addr := fmt.Sprintf("%s:%d", b.Config.Hostname, b.Config.PortNumber)
+	var port int
+	if b.isProd {
+		port = b.Config.ProdPortNumber
+	} else {
+		port = b.Config.DevelPortNumber
+	}
+	addr := fmt.Sprintf("%s:%d", b.Config.Hostname, port)
 
 	b.Ok("CAPTAIN: Open channel, %s", addr)
 	b.Warn("ON SCREEN: We are the Brog. Resistance is futile.")
@@ -91,6 +99,9 @@ func (b *Brog) ListenAndServe() error {
 	http.Handle("/assets", http.StripPrefix("/assets", http.FileServer(http.Dir(b.Config.AssetPath))))
 
 	b.Ok("Assimilation completed.")
+	if b.isProd {
+		b.Warn("Going live in production.")
+	}
 	return http.ListenAndServe(addr, nil)
 }
 

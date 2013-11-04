@@ -16,7 +16,8 @@ const (
 
 // Defaults for Brog's configuration.
 var (
-	DefaultPortNumber       = 3000
+	DefaultProdPortNumber   = 80
+	DefaultDevelPortNumber  = 3000
 	DefaultHostname         = "localhost"
 	DefaultMaxCPUs          = runtime.NumCPU()
 	DefaultTemplatePath     = "templates/"
@@ -33,7 +34,8 @@ var (
 // Config contains all the settings that a Brog uses to watch and create
 // and serve posts, log events and execute in general.
 type Config struct {
-	PortNumber       int    `json:"portNumber"`
+	ProdPortNumber   int    `json:"prodPortNumber"`
+	DevelPortNumber  int    `json:"develPortNumber"`
 	Hostname         string `json:"hostName"`
 	MaxCPUs          int    `json:"maxCpus"`
 	TemplatePath     string `json:"templatePath"`
@@ -49,7 +51,8 @@ type Config struct {
 
 func newDefaultConfig() *Config {
 	return &Config{
-		PortNumber:       DefaultPortNumber,
+		ProdPortNumber:   DefaultProdPortNumber,
+		DevelPortNumber:  DefaultDevelPortNumber,
 		Hostname:         DefaultHostname,
 		MaxCPUs:          DefaultMaxCPUs,
 		TemplatePath:     path.Clean(DefaultTemplatePath),
@@ -65,8 +68,12 @@ func newDefaultConfig() *Config {
 }
 
 func (c *Config) selfValidate() error {
-	if c.PortNumber < 1 || c.PortNumber > 1<<16 {
-		return fmt.Errorf("invalid port range (%d)", c.PortNumber)
+	if c.ProdPortNumber < 1 || c.ProdPortNumber > 1<<16 {
+		return fmt.Errorf("invalid port range (%d)", c.ProdPortNumber)
+	}
+
+	if c.DevelPortNumber < 1 || c.DevelPortNumber > 1<<16 {
+		return fmt.Errorf("invalid port range (%d)", c.ProdPortNumber)
 	}
 
 	if c.Hostname == "" {
