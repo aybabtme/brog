@@ -91,7 +91,7 @@ func (p *postManager) GetPost(key string) (*post, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	post, ok := p.posts[key]
-	if post.Invisible {
+	if ok && post.Invisible {
 		return nil, false
 	}
 	return post, ok
@@ -101,15 +101,19 @@ func (p *postManager) DeletePostWithFilename(filename string) (*post, bool) {
 
 	p.mu.RLock()
 
-	p.brog.Debug("Deleting post by filename '%s', %d posts before", filename, len(p.posts))
-	defer p.mu.RUnlock()
+	p.brog.Watch("Deleting post by filename '%s', %d posts before", filename, len(p.posts))
+
 	for _, post := range p.posts {
+		p.brog.Debug("Checking if match '%s'", post.filename)
 		if post.filename == filename {
-			delete(p.posts, post.GetID())
-			p.brog.Debug("Found post with ID '%s', %d posts after", post.GetID(), len(p.posts))
+			p.brog.Debug("Found post with ID '%s'", post.GetID())
+			p.mu.RUnlock()
+			p.DeletePost(post)
+			p.sortPosts()
 			return post, true
 		}
 	}
+	p.mu.RUnlock()
 
 	p.brog.Warn("Couldn't find post with filename '%s', not deleted", filename)
 	return nil, false
@@ -125,23 +129,15 @@ func (p *postManager) SetPost(post *post) {
 	p.sortPosts()
 }
 
-func (p *postManager) DeletePost(key string) (*post, bool) {
+func (p *postManager) DeletePost(post *post) {
 	p.mu.Lock()
 
-	p.brog.Debug("Deleting post '%s', %d posts before", key, len(p.posts))
-	post, ok := p.posts[key]
-	if !ok {
-		p.mu.Unlock()
-		p.brog.Debug("Delete not found '%s'", key)
-		return nil, ok
-	}
-	delete(p.posts, key)
-	p.brog.Debug("Deleted '%s', %d posts left", key, len(p.posts))
+	p.brog.Debug("Deleting post '%s', %d posts before", post.filename, len(p.posts))
+	delete(p.posts, post.GetID())
+	p.brog.Debug("Deleted '%s', %d posts left", post.filename, len(p.posts))
 	p.mu.Unlock()
 
 	p.sortPosts()
-
-	return post, ok
 }
 
 func (p *postManager) sortPosts() {
@@ -228,7 +224,9 @@ func (p *postManager) processPostEvent(ev *fsnotify.FileEvent) {
 
 func (p *postManager) processPostRename(ev *fsnotify.FileEvent) {
 
-	post, ok := p.DeletePost(ev.Name)
+	p.brog.Watch("Renamed post '%s'", ev.Name)
+
+	post, ok := p.DeletePostWithFilename(ev.Name)
 
 	if !ok {
 		p.brog.Warn("Renamed unknown file '%s', ignoring", ev.Name)
@@ -242,7 +240,7 @@ func (p *postManager) processPostRename(ev *fsnotify.FileEvent) {
 }
 
 func (p *postManager) processPostDelete(ev *fsnotify.FileEvent) {
-	post, ok := p.DeletePost(ev.Name)
+	post, ok := p.DeletePostWithFilename(ev.Name)
 
 	if !ok {
 		p.brog.Warn("Deleting unknown file '%s', ignoring", ev.Name)
@@ -268,10 +266,14 @@ func (p *postManager) processPostModify(ev *fsnotify.FileEvent) {
 	post, ok := p.DeletePostWithFilename(ev.Name)
 
 	if !ok {
+		fmt.Printf("Listing known posts.\n")
+		for key := range p.posts {
+			fmt.Printf("Knows of key %s\n", key)
+		}
 		p.brog.Warn("Post at '%s' was unknown", ev.Name)
+	} else {
+		p.brog.Watch("Reloading post titled '%s', %d posts before", post.Title, len(p.posts))
 	}
-
-	p.brog.Watch("Removing related post titled '%s', %d posts left", post.Title, len(p.posts))
 
 	err := p.loadFromFile(ev.Name)
 	if err != nil {
@@ -280,6 +282,7 @@ func (p *postManager) processPostModify(ev *fsnotify.FileEvent) {
 }
 
 func (p *postManager) loadFromFile(filename string) error {
+	p.brog.Debug("Loading post from file '%s'", filename)
 	post, err := newPostFromFile(filename)
 	if err != nil {
 		return fmt.Errorf("loading post from file '%s', %v", filename, err)
@@ -287,7 +290,7 @@ func (p *postManager) loadFromFile(filename string) error {
 
 	p.SetPost(post)
 
-	p.brog.Watch("Loaded post '%s' from file '%s', %d posts total", post.Title, filename, len(p.posts))
+	p.brog.Debug("Loaded post '%s' from file '%s', %d posts total", post.Title, filename, len(p.posts))
 
 	if post.Invisible {
 		p.brog.Watch("'%s' is invisible.", post.Title)

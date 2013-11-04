@@ -77,15 +77,17 @@ func main() {
 
 func doInit() {
 	fmt.Println(brush.DarkGray("A dark geometric shape is approaching..."))
-	err := brogger.CopyBrogBinaries()
-	if err != nil {
+	errs := brogger.CopyBrogBinaries()
+	if errs != nil {
 		printPreBrogError("Couldn't inject brog nanoprobes.\n")
-		printPreBrogError("Message : %v.\n", err)
+		for _, err := range errs {
+			printPreBrogError("Message : %v.\n", err)
+		}
 		return
 	}
 
 	brog, err := brogger.PrepareBrog(false)
-	if err != nil {
+	if errs != nil {
 		printPreBrogError("Couldn't prepare brog structure.\n")
 		printPreBrogError("Message : %v.\n", err)
 		return

@@ -168,27 +168,13 @@ func (t *templateManager) processTemplateEvent(ev *fsnotify.FileEvent) {
 }
 
 func (t *templateManager) processTemplateModify(ev *fsnotify.FileEvent) {
-	var replicator func(string) error
 	filename := path.Base(ev.Name)
-	switch filename {
-	default:
+	tmpl, ok := allTemplates[filename]
+	if !ok {
 		t.brog.Watch("'%s' ignored. Brog can only use its default templates.", ev.Name)
 		return
-	case appTmplName:
-		replicator = appPaktTmpl.rewriteFileOnDir
-	case indexTmplName:
-		replicator = indexPaktTmpl.rewriteFileOnDir
-	case postTmplName:
-		replicator = postPaktTmpl.rewriteFileOnDir
-	case styleTmplName:
-		replicator = stylePaktTmpl.rewriteFileOnDir
-	case jsTmplName:
-		replicator = javascriptPaktTmpl.rewriteFileOnDir
-	case headerTmplName:
-		replicator = headerPaktTmpl.rewriteFileOnDir
-	case footerTmplName:
-		replicator = footerPaktTmpl.rewriteFileOnDir
 	}
+
 	t.brog.Watch("Template '%s' changed, parsing templates again.", ev.Name)
 	err := t.initializeAppTmpl()
 	if err == nil {
@@ -206,7 +192,7 @@ func (t *templateManager) processTemplateModify(ev *fsnotify.FileEvent) {
 
 	t.brog.Warn("Brog to eradicate threat. Overwriting '%s'.", ev.Name)
 
-	if err := replicator(t.brog.Config.TemplatePath); err != nil {
+	if err := tmpl.rewriteInDir(t.brog.Config.TemplatePath); err != nil {
 		t.brog.Err("Eradication of '%s' failed, %v", filename, err)
 		return
 	}
@@ -221,26 +207,12 @@ func (t *templateManager) processTemplateModify(ev *fsnotify.FileEvent) {
 }
 
 func (t *templateManager) processTemplateDelete(ev *fsnotify.FileEvent) {
-	var replicator func(string) error
+
 	filename := path.Base(ev.Name)
-	switch filename {
-	default:
-		// Don't care, we don't use this template
+	tmpl, ok := allTemplates[filename]
+	if !ok {
+		// Don't care
 		return
-	case appTmplName:
-		replicator = appPaktTmpl.replicateInDir
-	case indexTmplName:
-		replicator = indexPaktTmpl.replicateInDir
-	case postTmplName:
-		replicator = postPaktTmpl.replicateInDir
-	case styleTmplName:
-		replicator = stylePaktTmpl.replicateInDir
-	case jsTmplName:
-		replicator = javascriptPaktTmpl.replicateInDir
-	case headerTmplName:
-		replicator = headerPaktTmpl.replicateInDir
-	case footerTmplName:
-		replicator = footerPaktTmpl.replicateInDir
 	}
 
 	t.brog.Err("Brog detected the destruction of a vital part: %s", ev.Name)
@@ -252,7 +224,7 @@ func (t *templateManager) processTemplateDelete(ev *fsnotify.FileEvent) {
 
 	t.brog.Warn("Brog to regenerate '%s'.", ev.Name)
 
-	if err := replicator(t.brog.Config.TemplatePath); err != nil {
+	if err := tmpl.replicateInDir(t.brog.Config.TemplatePath); err != nil {
 		t.brog.Err("Regeneration of '%s' failed, %v", filename, err)
 		return
 	}
