@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"text/template"
 	"time"
+	"strings"
 )
 
 // Brog loads its configuration file, provide logging facility, serves
@@ -131,16 +132,46 @@ func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
 func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	defer statCount(b, req)()
 
-	posts := b.postMngr.GetAllPosts()
-	b.Debug("Serving %d posts to requester", len(posts))
-	b.tmplMngr.DoWithIndex(func(t *template.Template) {
-		if err := t.Execute(rw, posts); err != nil {
-			b.Err("serving index request, %v", err)
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
+	var posts []*post
+	var langSet bool
+	langSet = true
+	if b.Config.Multilingual {
+		var i int
+		langSet = false
+		for i=0;i<len(b.Config.Languages);i++ {
+			if strings.Contains(req.URL.RawQuery, b.Config.Languages[i].(string)) {
+				langSet = true
+				break
+			}
 		}
-
-	})
+		if langSet {
+			posts = b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery)
+			b.Debug("Serving %d posts with language %s to requester", len(posts), req.URL.RawQuery)
+		} else {
+			posts = nil
+			b.Debug("Language not set for multilingual blog")
+		}
+	} else {
+		posts = b.postMngr.GetAllPosts()
+		b.Debug("Serving %d posts to requester", len(posts))
+	}
+	if langSet {
+		b.tmplMngr.DoWithIndex(func(t *template.Template) {
+			if err := t.Execute(rw, posts); err != nil {
+				b.Err("serving index request, %v", err)
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		})
+	} else {
+		b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
+			b.Debug("Sending language selection screen")
+			if err := t.Execute(rw, b.Config.Languages); err != nil {
+				b.Err("serving index, language select, request, %v", err)
+				return
+			}
+		})
+	}
 }
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {

@@ -87,6 +87,27 @@ func (p *postManager) GetAllPosts() []*post {
 	return postCopy
 }
 
+func (p *postManager) GetAllPostsWithLanguage(lang string) []*post {
+	var i int
+	var j int
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	for j=0;j<len(p.sortedPosts);j++ {
+		if p.sortedPosts[j].Language == lang {
+			i++
+		}
+	}
+	postCopy := make([]*post, i)
+	i = 0
+	for j=0;j<len(p.sortedPosts);j++ {
+		if p.sortedPosts[j].Language == lang {
+			postCopy[i] = p.sortedPosts[j]
+			i++
+		}
+	}
+	return postCopy
+}
+
 func (p *postManager) GetPost(key string) (*post, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
