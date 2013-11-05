@@ -133,13 +133,12 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	defer statCount(b, req)()
 
 	var posts []*post
-	var langSet bool
-	langSet = true
+	langSet := true
 	if b.Config.Multilingual {
 		var i int
 		langSet = false
-		for i=0;i<len(b.Config.Languages);i++ {
-			if strings.Contains(req.URL.RawQuery, b.Config.Languages[i].(string)) {
+		for i, val := b.Config.Languages {
+			if strings.Contains(req.URL.RawQuery, val) {
 				langSet = true
 				break
 			}

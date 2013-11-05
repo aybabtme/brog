@@ -92,17 +92,9 @@ func (p *postManager) GetAllPostsWithLanguage(lang string) []*post {
 	var j int
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	for j=0;j<len(p.sortedPosts);j++ {
-		if p.sortedPosts[j].Language == lang {
-			i++
-		}
-	}
-	postCopy := make([]*post, i)
-	i = 0
-	for j=0;j<len(p.sortedPosts);j++ {
-		if p.sortedPosts[j].Language == lang {
-			postCopy[i] = p.sortedPosts[j]
-			i++
+	for j, val := range p.sortedPosts {
+		if val.Language == lang {
+			postCopy = append(postCopy, val)
 		}
 	}
 	return postCopy

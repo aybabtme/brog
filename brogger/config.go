@@ -32,26 +32,26 @@ var (
 	DefaultMultilingual     = false // False because blogs are usually unilingual
 )
 
-var DefaultLanguages = []interface{}{ "en" }
+var DefaultLanguages = { "en" }
 
 // Config contains all the settings that a Brog uses to watch and create
 // and serve posts, log events and execute in general.
 type Config struct {
-	ProdPortNumber   int           `json:"prodPortNumber"`
-	DevelPortNumber  int           `json:"develPortNumber"`
-	Hostname         string        `json:"hostName"`
-	MaxCPUs          int           `json:"maxCpus"`
-	TemplatePath     string        `json:"templatePath"`
-	PostPath         string        `json:"postPath"`
-	AssetPath        string        `json:"assetPath"`
-	PostFileExt      string        `json:"postFileExtension"`
-	LogFilename      string        `json:"logFilename"`
-	LogFileVerbosity string        `json:"logFileVerbosity"`
-	ConsoleVerbosity string        `json:"consoleVerbosity"`
-	RewriteInvalid   bool          `json:"rewriteInvalid"`
-	RewriteMissing   bool          `json:"rewriteMissing"`
-	Multilingual     bool	       `json:"multilingual"`
-	Languages        []interface{} `json:"languages"`
+	ProdPortNumber   int      `json:"prodPortNumber"`
+	DevelPortNumber  int      `json:"develPortNumber"`
+	Hostname         string   `json:"hostName"`
+	MaxCPUs          int      `json:"maxCpus"`
+	TemplatePath     string   `json:"templatePath"`
+	PostPath         string   `json:"postPath"`
+	AssetPath        string   `json:"assetPath"`
+	PostFileExt      string   `json:"postFileExtension"`
+	LogFilename      string   `json:"logFilename"`
+	LogFileVerbosity string   `json:"logFileVerbosity"`
+	ConsoleVerbosity string   `json:"consoleVerbosity"`
+	RewriteInvalid   bool     `json:"rewriteInvalid"`
+	RewriteMissing   bool     `json:"rewriteMissing"`
+	Multilingual     bool	  `json:"multilingual"`
+	Languages        []string `json:"languages"`
 }
 
 func newDefaultConfig() *Config {
@@ -70,7 +70,7 @@ func newDefaultConfig() *Config {
 		RewriteInvalid:   DefaultRewriteInvalid,
 		RewriteMissing:   DefaultRewriteMissing,
 		Multilingual:     DefaultMultilingual,
-		Languages:       DefaultLanguages,
+		Languages:        DefaultLanguages,
 	}
 }
 
