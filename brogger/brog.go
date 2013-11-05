@@ -150,11 +150,19 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 	var posts []*post
 	if b.Config.Multilingual {
-		if !b.validLangInQuery(req.URL.RawQuery) {
+		lang := req.URL.RawQuery
+		langCookie, err := req.Cookie("lang")
+		if lang != "" && err != nil {
+			rw.Header().Add("Set-Cookie", "lang="+lang)
+		}
+		if lang == ""  && err == nil {
+			lang = langCookie.Value
+		}
+		if !b.validLangInQuery(lang) {
 			b.langSelectFunc(rw)
 			return
 		}
-		posts = b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery)
+		posts = b.postMngr.GetAllPostsWithLanguage(lang)
 	} else {
 		posts = b.postMngr.GetAllPosts()
 	}
