@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"path"
 	"runtime"
+	"strings"
 	"text/template"
 	"time"
-	"strings"
 )
 
 // Brog loads its configuration file, provide logging facility, serves
@@ -150,7 +150,7 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 		posts = b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery)
- 	} else {
+	} else {
 		posts = b.postMngr.GetAllPosts()
 	}
 	b.Debug("Serving %d posts with language %s to requester", len(posts), req.URL.RawQuery)

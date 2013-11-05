@@ -31,9 +31,9 @@ type templateManager struct {
 	watcher *fsnotify.Watcher // Listens on `path`
 	die     chan struct{}     // To kill the watcher goroutine
 
-	mu    sync.RWMutex // Locks the templates
-	index *template.Template
-	post  *template.Template
+	mu         sync.RWMutex // Locks the templates
+	index      *template.Template
+	post       *template.Template
 	langselect *template.Template
 }
 
