@@ -1,20 +1,14 @@
 <!doctype html>
 <html>
 <head>
-   <meta charset="utf-8">
-   <title>We Are Brog</title>
-   {{template "style" .}}
+<meta charset="utf-8">
+<title>We Are Brog</title>
+{{template "style" .}}
 </head>
 <body>
-    <header>
-       {{template "header" .}}
-    </header>
-
-  {{template "content" .}}
-
-    <footer>
-       {{template "footer" .}}
-    </footer>
+<header>{{template "header" .}}</header>
+<div id="content">{{template "content" .}}</div>
+<footer>{{template "footer" .}}</footer>
 {{template "javascript" .}}
 </body>
 </html>

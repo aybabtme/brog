@@ -17,10 +17,12 @@ const (
 // Base templates
 var allAssets = map[string]packed{
 	// Base CSS
-	"brog.css": {"brog.css", path.Join(DefaultAssetPath, cssPath), baseAssetsCssBrogCss},
+	"brog.css":   {"brog.css", path.Join(DefaultAssetPath, cssPath), baseAssetsCssBrogCss},
+	"github.css": {"github.css", path.Join(DefaultAssetPath, cssPath), baseAssetsCssGithubCss},
 
 	// Base JS,
-	"brog.js": {"brog.js", path.Join(DefaultAssetPath, jsPath), baseAssetsJsBrogJs},
+	"brog.js":          {"brog.js", path.Join(DefaultAssetPath, jsPath), baseAssetsJsBrogJs},
+	"highlight.min.js": {"highlight.min.js", path.Join(DefaultAssetPath, jsPath), baseAssetsJsHighlightMinJs},
 
 	// Base posts
 	"sample.md": {"sample.md", DefaultPostPath, basePostsSampleMd},

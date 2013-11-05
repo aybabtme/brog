@@ -73,3 +73,12 @@ To remove artifacts resulting in a build/run at the root folder of `brog`:
 ```
 make clean
 ```
+
+License
+-------
+
+All of `brog` proper is MIT licensed.  See [`LICENSE.md`](LICENSE.md).
+
+Some files bundled with `brog` have their own license. Their licenses can also be found in [`LICENSE.md`](LICENSE.md).  If you do not agree to their terms, feel free to remove the related parts.
+
+[`highlight.js`](https://github.com/isagalaev/highlight.js) is copyright (c) 2006, Ivan Sagalaev

@@ -1,9 +1,13 @@
 {{define "content"}}
+
+<p>Go back to the <a href="/">index</a>.</p>
+
+<h1>{{.Title}}</h1>
+<p>
+    <small>By {{.Author}}, {{.Date.Weekday}} {{.Date.Month}} {{.Date.Day}}, {{.Date.Year}}</small>
+</p>
+
 <article>
-    <h1>
-        {{.Title}}
-    </h1>
-    <p><small>By {{.Author}}, {{.Date.Weekday}} {{.Date.Day}} {{.Date.Month}} {{.Date.Year}}</small></p>
     {{.Content}}
 </article>
 {{end}}
