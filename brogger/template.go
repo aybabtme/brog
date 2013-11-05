@@ -14,13 +14,14 @@ import (
 )
 
 const (
-	appTmplName    = "application.gohtml"
-	indexTmplName  = "index.gohtml"
-	postTmplName   = "post.gohtml"
-	styleTmplName  = "style.gohtml"
-	jsTmplName     = "javascript.gohtml"
-	headerTmplName = "header.gohtml"
-	footerTmplName = "footer.gohtml"
+	appTmplName        = "application.gohtml"
+	indexTmplName      = "index.gohtml"
+	postTmplName       = "post.gohtml"
+	langSelectTmplName = "langselect.gohtml"
+	styleTmplName      = "style.gohtml"
+	jsTmplName         = "javascript.gohtml"
+	headerTmplName     = "header.gohtml"
+	footerTmplName     = "footer.gohtml"
 )
 
 type templateManager struct {
@@ -30,9 +31,10 @@ type templateManager struct {
 	watcher *fsnotify.Watcher // Listens on `path`
 	die     chan struct{}     // To kill the watcher goroutine
 
-	mu    sync.RWMutex // Locks the templates
-	index *template.Template
-	post  *template.Template
+	mu         sync.RWMutex // Locks the templates
+	index      *template.Template
+	post       *template.Template
+	langselect *template.Template
 }
 
 func startTemplateManager(brog *Brog, templPath string) (*templateManager, error) {
@@ -71,6 +73,12 @@ func (t *templateManager) DoWithIndex(do func(*template.Template)) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	do(t.index)
+}
+
+func (t *templateManager) DoWithLangSelect(do func(*template.Template)) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	do(t.langselect)
 }
 
 func (t *templateManager) Close() error {
@@ -113,9 +121,25 @@ func (t *templateManager) initializeAppTmpl() error {
 		return fmt.Errorf("parsing post template at '%s', %v", prefix(postTmplName), err)
 	}
 
+	langSelectApp, err := template.ParseFiles(
+		prefix(appTmplName),
+		prefix(styleTmplName),
+		prefix(jsTmplName),
+		prefix(headerTmplName),
+		prefix(footerTmplName),
+	)
+	if err != nil {
+		return fmt.Errorf("parsing langSelectApp template, %v", err)
+	}
+	langSelect, err := langSelectApp.ParseFiles(prefix(langSelectTmplName))
+	if err != nil {
+		return fmt.Errorf("parsing langSelect template at '%s', %v", prefix(langSelectTmplName), err)
+	}
+
 	t.mu.Lock()
 	t.index = index
 	t.post = post
+	t.langselect = langSelect
 	t.mu.Unlock()
 
 	return nil
