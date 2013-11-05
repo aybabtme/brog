@@ -33,13 +33,14 @@ var allAssets = map[string]packed{
 
 var allTemplates = map[string]packed{
 	// HTML templates
-	appTmplName:    {appTmplName, DefaultTemplatePath, baseTemplatesApplicationGohtml},
-	indexTmplName:  {indexTmplName, DefaultTemplatePath, baseTemplatesIndexGohtml},
-	postTmplName:   {postTmplName, DefaultTemplatePath, baseTemplatesPostGohtml},
-	styleTmplName:  {styleTmplName, DefaultTemplatePath, baseTemplatesStyleGohtml},
-	jsTmplName:     {jsTmplName, DefaultTemplatePath, baseTemplatesJavascriptGohtml},
-	headerTmplName: {headerTmplName, DefaultTemplatePath, baseTemplatesHeaderGohtml},
-	footerTmplName: {footerTmplName, DefaultTemplatePath, baseTemplatesFooterGohtml},
+	appTmplName:        {appTmplName, DefaultTemplatePath, baseTemplatesApplicationGohtml},
+	indexTmplName:      {indexTmplName, DefaultTemplatePath, baseTemplatesIndexGohtml},
+	postTmplName:       {postTmplName, DefaultTemplatePath, baseTemplatesPostGohtml},
+	langSelectTmplName: {langSelectTmplName, DefaultTemplatePath, baseTemplatesLangselectGohtml},
+	styleTmplName:      {styleTmplName, DefaultTemplatePath, baseTemplatesStyleGohtml},
+	jsTmplName:         {jsTmplName, DefaultTemplatePath, baseTemplatesJavascriptGohtml},
+	headerTmplName:     {headerTmplName, DefaultTemplatePath, baseTemplatesHeaderGohtml},
+	footerTmplName:     {footerTmplName, DefaultTemplatePath, baseTemplatesFooterGohtml},
 }
 
 type packed struct {
