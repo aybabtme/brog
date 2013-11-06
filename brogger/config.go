@@ -20,9 +20,9 @@ var (
 	DefaultDevelPortNumber  = 3000
 	DefaultHostname         = "localhost"
 	DefaultMaxCPUs          = runtime.NumCPU()
-	DefaultTemplatePath     = "templates/"
-	DefaultPostPath         = "posts/"
-	DefaultAssetPath        = "assets/"
+	DefaultTemplatePath     = "templates" + string(os.PathSeparator)
+	DefaultPostPath         = "posts" + string(os.PathSeparator)
+	DefaultAssetPath        = "assets" + string(os.PathSeparator)
 	DefaultPostFileExt      = ".md"
 	DefaultLogFilename      = "brog.log"
 	DefaultLogVerbosity     = "watch"

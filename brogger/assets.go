@@ -10,8 +10,8 @@ import (
 const (
 	// ConfigFilename where to find the Brog config file.
 	ConfigFilename = "brog_config.json"
-	jsPath         = "js/"
-	cssPath        = "css/"
+	jsPath         = "js" + string(os.PathSeparator)
+	cssPath        = "css" + string(os.PathSeparator)
 )
 
 // Base templates
@@ -29,8 +29,8 @@ var allAssets = map[string]packed{
 	"blank.md":  {"blank.md", DefaultPostPath, basePostsBlankMd},
 
 	// Base files
-	".gitignore": {".gitignore", "./", baseGitignore},
-	"README.md":  {"README.md", "./", baseREADMEMd},
+	".gitignore": {".gitignore", "", baseGitignore},
+	"README.md":  {"README.md", "", baseREADMEMd},
 }
 
 var allTemplates = map[string]packed{
