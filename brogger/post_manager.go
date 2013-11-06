@@ -5,7 +5,6 @@ import (
 	"github.com/howeyc/fsnotify"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -63,7 +62,7 @@ func (p *postManager) loadAllPosts() error {
 	for _, fileInfo := range fileInfos {
 		if !fileInfo.IsDir() {
 
-			fullpath := path.Clean(p.path) +
+			fullpath := filepath.Clean(p.path) +
 				string(os.PathSeparator) +
 				fileInfo.Name()
 

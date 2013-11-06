@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 const (
@@ -17,12 +17,12 @@ const (
 // Base templates
 var allAssets = map[string]packed{
 	// Base CSS
-	"brog.css":   {"brog.css", path.Join(DefaultAssetPath, cssPath), baseAssetsCssBrogCss},
-	"github.css": {"github.css", path.Join(DefaultAssetPath, cssPath), baseAssetsCssGithubCss},
+	"brog.css":   {"brog.css", filepath.Join(DefaultAssetPath, cssPath), baseAssetsCssBrogCss},
+	"github.css": {"github.css", filepath.Join(DefaultAssetPath, cssPath), baseAssetsCssGithubCss},
 
 	// Base JS,
-	"brog.js":          {"brog.js", path.Join(DefaultAssetPath, jsPath), baseAssetsJsBrogJs},
-	"highlight.min.js": {"highlight.min.js", path.Join(DefaultAssetPath, jsPath), baseAssetsJsHighlightMinJs},
+	"brog.js":          {"brog.js", filepath.Join(DefaultAssetPath, jsPath), baseAssetsJsBrogJs},
+	"highlight.min.js": {"highlight.min.js", filepath.Join(DefaultAssetPath, jsPath), baseAssetsJsHighlightMinJs},
 
 	// Base posts
 	"sample.md": {"sample.md", DefaultPostPath, basePostsSampleMd},
@@ -52,7 +52,7 @@ type packed struct {
 }
 
 func (p *packed) replicate() error {
-	fullpath := path.Join(p.destination, p.filename)
+	fullpath := filepath.Join(p.destination, p.filename)
 	if fileExists(fullpath) {
 		return fmt.Errorf("file '%s' already exists, will not overwrite", fullpath)
 	}
@@ -60,7 +60,7 @@ func (p *packed) replicate() error {
 }
 
 func (p *packed) replicateInDir(dirname string) error {
-	fullpath := path.Join(dirname, p.filename)
+	fullpath := filepath.Join(dirname, p.filename)
 	if fileExists(fullpath) {
 		return fmt.Errorf("file '%s' already exists, will not overwrite", fullpath)
 	}
@@ -68,7 +68,7 @@ func (p *packed) replicateInDir(dirname string) error {
 }
 
 func (p *packed) rewriteInDir(dirname string) error {
-	fullpath := path.Join(dirname, p.filename)
+	fullpath := filepath.Join(dirname, p.filename)
 	return p.rewriteFile(fullpath)
 }
 
@@ -115,6 +115,6 @@ func CopyBlankToFilename(conf *Config, filename string) error {
 	if filename == "" {
 		return fmt.Errorf("no filename specified")
 	}
-	fullpath := path.Clean(conf.PostPath) + string(os.PathSeparator) + filename + conf.PostFileExt
+	fullpath := filepath.Clean(conf.PostPath) + string(os.PathSeparator) + filename + conf.PostFileExt
 	return ioutil.WriteFile(fullpath, basePostsBlankMd, 0640)
 }

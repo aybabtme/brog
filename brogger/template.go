@@ -3,7 +3,6 @@ package brogger
 import (
 	"fmt"
 	"github.com/howeyc/fsnotify"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -89,7 +88,7 @@ func (t *templateManager) Close() error {
 func (t *templateManager) initializeAppTmpl() error {
 
 	prefix := func(filename string) string {
-		return path.Join(t.brog.Config.TemplatePath, filename)
+		return filepath.Join(t.brog.Config.TemplatePath, filename)
 	}
 
 	indexApp, err := template.ParseFiles(
@@ -192,7 +191,7 @@ func (t *templateManager) processTemplateEvent(ev *fsnotify.FileEvent) {
 }
 
 func (t *templateManager) processTemplateModify(ev *fsnotify.FileEvent) {
-	filename := path.Base(ev.Name)
+	filename := filepath.Base(ev.Name)
 	tmpl, ok := allTemplates[filename]
 	if !ok {
 		t.brog.Watch("'%s' ignored. Brog can only use its default templates.", ev.Name)
@@ -232,7 +231,7 @@ func (t *templateManager) processTemplateModify(ev *fsnotify.FileEvent) {
 
 func (t *templateManager) processTemplateDelete(ev *fsnotify.FileEvent) {
 
-	filename := path.Base(ev.Name)
+	filename := filepath.Base(ev.Name)
 	tmpl, ok := allTemplates[filename]
 	if !ok {
 		// Don't care
@@ -264,7 +263,7 @@ func (t *templateManager) processTemplateDelete(ev *fsnotify.FileEvent) {
 
 func stripExtension(fullpath string) string {
 	filename := filepath.Base(fullpath)
-	extLen := len(path.Ext(filename))
+	extLen := len(filepath.Ext(filename))
 	// Strip the file extension
 	return filename[:len(filename)-extLen]
 }

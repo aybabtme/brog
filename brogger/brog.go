@@ -3,7 +3,7 @@ package brogger
 import (
 	"fmt"
 	"net/http"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"text/template"
@@ -178,7 +178,7 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter) {
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 	defer statCount(b, req)()
 
-	postID := path.Base(req.RequestURI)
+	postID := filepath.Base(req.RequestURI)
 	post, ok := b.postMngr.GetPost(postID)
 	if !ok {
 		b.Warn("not found, %v", req)

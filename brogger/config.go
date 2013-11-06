@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -59,11 +59,11 @@ func newDefaultConfig() *Config {
 		DevelPortNumber:  DefaultDevelPortNumber,
 		Hostname:         DefaultHostname,
 		MaxCPUs:          DefaultMaxCPUs,
-		TemplatePath:     path.Clean(DefaultTemplatePath),
-		PostPath:         path.Clean(DefaultPostPath),
-		AssetPath:        path.Clean(DefaultAssetPath),
+		TemplatePath:     filepath.Clean(DefaultTemplatePath),
+		PostPath:         filepath.Clean(DefaultPostPath),
+		AssetPath:        filepath.Clean(DefaultAssetPath),
 		PostFileExt:      DefaultPostFileExt,
-		LogFilename:      path.Clean(DefaultLogFilename),
+		LogFilename:      filepath.Clean(DefaultLogFilename),
 		LogFileVerbosity: DefaultLogVerbosity,
 		ConsoleVerbosity: DefaultConsoleVerbosity,
 		RewriteInvalid:   DefaultRewriteInvalid,
@@ -89,10 +89,10 @@ func (c *Config) selfValidate() error {
 	if c.PostFileExt == "" {
 		return fmt.Errorf("invalid Post file extension (%s)", c.PostFileExt)
 	}
-	c.AssetPath = path.Clean(c.AssetPath)
-	c.PostPath = path.Clean(c.PostPath)
-	c.TemplatePath = path.Clean(c.TemplatePath)
-	c.LogFilename = path.Clean(c.LogFilename)
+	c.AssetPath = filepath.Clean(c.AssetPath)
+	c.PostPath = filepath.Clean(c.PostPath)
+	c.TemplatePath = filepath.Clean(c.TemplatePath)
+	c.LogFilename = filepath.Clean(c.LogFilename)
 
 	return nil
 }
