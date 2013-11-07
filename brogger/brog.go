@@ -155,7 +155,7 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 		lang := req.URL.RawQuery
 		langCookie, err := req.Cookie("lang")
 		if lang != "" {
-			if err != nil || langCookie.Value == "" {
+			if err != nil || strings.HasSuffix(req.Referer(), "/changelang") {
 				rw.Header().Add("Set-Cookie", "lang="+lang)
 			}
 		} else if err == nil {
@@ -189,10 +189,6 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	/* If the lang is already set, reset it */
-	_, err := req.Cookie("lang")
-	if err != nil {
-		rw.Header().Add("Set-Cookie", "lang=")
-	}
 	b.Debug("Language not set for multilingual blog")
 	data := appContent{
 		Posts: nil,
