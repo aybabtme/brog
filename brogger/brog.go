@@ -100,6 +100,7 @@ func (b *Brog) ListenAndServe() error {
 	}
 
 	http.HandleFunc("/heartbeat", b.heartBeat)
+	http.HandleFunc("/changelang", b.langSelectFunc)
 	http.HandleFunc("/posts/", b.postFunc)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(b.Config.AssetPath))))
 	http.HandleFunc("/", b.indexFunc)
@@ -152,21 +153,23 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	if b.Config.Multilingual {
 		lang := req.URL.RawQuery
 		langCookie, err := req.Cookie("lang")
-		if lang != "" && err != nil {
-			rw.Header().Add("Set-Cookie", "lang="+lang)
-		}
-		if lang == ""  && err == nil {
+		if lang != "" {
+			if err != nil || langCookie.Value == "" {
+				rw.Header().Add("Set-Cookie", "lang="+lang)
+			}
+		} else if err == nil {
 			lang = langCookie.Value
 		}
 		if !b.validLangInQuery(lang) {
-			b.langSelectFunc(rw)
+			b.langSelectFunc(rw, req)
 			return
 		}
 		posts = b.postMngr.GetAllPostsWithLanguage(lang)
+		b.Debug("Serving %d posts with language %s to requester", len(posts), lang)
 	} else {
 		posts = b.postMngr.GetAllPosts()
+		b.Debug("Serving %d posts to requester", len(posts))
 	}
-	b.Debug("Serving %d posts with language %s to requester", len(posts), req.URL.RawQuery)
 
 	data := appContent{
 		Posts:   posts,
@@ -182,7 +185,12 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func (b *Brog) langSelectFunc(rw http.ResponseWriter) {
+func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
+	/* If the lang is already set, reset it */
+	_, err := req.Cookie("lang")
+	if lang != "" && err != nil {
+		rw.Header().Add("Set-Cookie", "lang=")
+	}
 	b.Debug("Language not set for multilingual blog")
 	b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
 		b.Debug("Sending language selection screen")
