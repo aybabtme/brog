@@ -277,10 +277,6 @@ func (p *postManager) processPostModify(ev *fsnotify.FileEvent) {
 	post, ok := p.DeletePostWithFilename(ev.Name)
 
 	if !ok {
-		fmt.Printf("Listing known posts.\n")
-		for key := range p.posts {
-			fmt.Printf("Knows of key %s\n", key)
-		}
 		p.brog.Warn("Post at '%s' was unknown", ev.Name)
 	} else {
 		p.brog.Watch("Reloading post titled '%s', %d posts before", post.Title, len(p.posts))

@@ -1,14 +1,22 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>We Are Brog</title>
-{{template "style" .}}
+    <meta charset="utf-8">
+    {{with .CurPost}}
+    <title>{{.Title}}</title>
+    <meta name="description" content="{{.Abstract}}">
+    <meta name="citation_authors" content="{{.Author}}">
+    {{else}}
+    <title>We Are Brog</title>
+    {{end}}
+    {{template "style" .}}
 </head>
+
 <body>
 <header>{{template "header" .}}</header>
 <div id="content">{{template "content" .}}</div>
 <footer>{{template "footer" .}}</footer>
 {{template "javascript" .}}
 </body>
+
 </html>

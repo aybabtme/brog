@@ -1,6 +1,6 @@
 {{define "content"}}
 <article>
-{{range .}}
+{{range .Posts}}
 
     <h2><a href="/posts/{{.GetID}}">{{.Title}}</a></h2>
     <p><small>By {{.Author}}, {{.Date.Weekday}} {{.Date.Day}} {{.Date.Month}} {{.Date.Year}}</small></p>

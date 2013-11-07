@@ -20,6 +20,11 @@ type Brog struct {
 	postMngr *postManager
 }
 
+type appContent struct {
+	Posts   []*post
+	CurPost *post
+}
+
 // PrepareBrog creates a Brog instance, loading it's configuration from
 // a file named `ConfigFilename` that must lie at the current working
 // directory. It creates a logging file at the location specified in the
@@ -154,8 +159,14 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 		posts = b.postMngr.GetAllPosts()
 	}
 	b.Debug("Serving %d posts with language %s to requester", len(posts), req.URL.RawQuery)
+
+	data := appContent{
+		Posts:   posts,
+		CurPost: nil,
+	}
+
 	b.tmplMngr.DoWithIndex(func(t *template.Template) {
-		if err := t.Execute(rw, posts); err != nil {
+		if err := t.Execute(rw, data); err != nil {
 			b.Err("serving index request, %v", err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
@@ -185,8 +196,14 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 		http.NotFound(rw, req)
 		return
 	}
+
+	data := appContent{
+		Posts:   nil,
+		CurPost: post,
+	}
+
 	b.tmplMngr.DoWithPost(func(t *template.Template) {
-		if err := t.Execute(rw, post); err != nil {
+		if err := t.Execute(rw, data); err != nil {
 			b.Err("serving post request for ID=%s, %v", postID, err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return

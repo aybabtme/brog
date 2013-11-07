@@ -1,5 +1,5 @@
 {{define "content"}}
-
+{{with .CurPost}}
 <p>Go back to the <a href="/">index</a>.</p>
 
 <h1>{{.Title}}</h1>
@@ -10,4 +10,5 @@
 <article>
     {{.Content}}
 </article>
+{{end}}
 {{end}}
