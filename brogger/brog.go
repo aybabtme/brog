@@ -99,10 +99,12 @@ func (b *Brog) ListenAndServe() error {
 		return fmt.Errorf("starting watchers, %v", err)
 	}
 
-	http.HandleFunc("/heartbeat", b.heartBeat)
-	http.HandleFunc("/posts/", b.postFunc)
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(b.Config.AssetPath))))
-	http.HandleFunc("/", b.indexFunc)
+	http.HandleFunc("/heartbeat", b.logHandlerFunc(b.heartBeat))
+	http.HandleFunc("/posts/", b.logHandlerFunc(b.postFunc))
+	http.HandleFunc("/", b.logHandlerFunc(b.indexFunc))
+
+	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
+	http.Handle("/assets/", http.StripPrefix("/assets/", b.logHandler(fileServer)))
 
 	b.Ok("Assimilation completed.")
 	if b.isProd {
@@ -146,12 +148,11 @@ func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
-	defer statCount(b, req)()
 
 	var posts []*post
 	if b.Config.Multilingual {
 		if !b.validLangInQuery(req.URL.RawQuery) {
-			b.langSelectFunc(rw)
+			b.langSelectFunc(rw, req)
 			return
 		}
 		posts = b.postMngr.GetAllPostsWithLanguage(req.URL.RawQuery)
@@ -174,7 +175,7 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func (b *Brog) langSelectFunc(rw http.ResponseWriter) {
+func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	b.Debug("Language not set for multilingual blog")
 	b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
 		b.Debug("Sending language selection screen")
@@ -187,7 +188,6 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter) {
 }
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
-	defer statCount(b, req)()
 
 	postID := filepath.Base(req.RequestURI)
 	post, ok := b.postMngr.GetPost(postID)
@@ -211,9 +211,26 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func statCount(b *Brog, req *http.Request) func() {
-	now := time.Now()
-	return func() {
-		b.Ok("Done in %s, req=%v", time.Since(now), req.URL)
-	}
+func (b *Brog) logHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+
+		b.Ok("request by %s for '%s' as '%s'",
+			req.RemoteAddr, req.RequestURI, req.UserAgent())
+
+		now := time.Now()
+		h.ServeHTTP(w, req)
+		b.Ok("Done in %s", time.Since(now))
+	})
+}
+
+func (b *Brog) logHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+
+		b.Ok("request by %s for '%s' as '%s'",
+			req.RemoteAddr, req.RequestURI, req.UserAgent())
+
+		now := time.Now()
+		h.ServeHTTP(w, req)
+		b.Ok("Done in %s", time.Since(now))
+	})
 }
