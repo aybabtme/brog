@@ -21,9 +21,9 @@ type Brog struct {
 }
 
 type appContent struct {
-	Posts   []*post
+	Posts     []*post
 	Languages []string
-	CurPost *post
+	CurPost   *post
 }
 
 // PrepareBrog creates a Brog instance, loading it's configuration from
@@ -113,7 +113,12 @@ func (b *Brog) ListenAndServe() error {
 	return http.ListenAndServe(addr, nil)
 }
 
-func (b *Brog) validLangInQuery(lang string) bool {
+func (b *Brog) extractLanguage(req *http.Request) (string, bool) {
+	lang := req.URL.RawQuery
+	langCookie, err := req.Cookie("lang")
+	if lang == "" && err == nil {
+		lang = langCookie.Value
+	}
 	langSet := false
 	for _, val := range b.Config.Languages {
 		if strings.Contains(lang, val) {
@@ -121,7 +126,15 @@ func (b *Brog) validLangInQuery(lang string) bool {
 			break
 		}
 	}
-	return langSet
+	return lang, langSet
+}
+
+func (b *Brog) setLangCookie(req *http.Request, rw http.ResponseWriter) {
+	lang := req.URL.RawQuery
+	_, err := req.Cookie("lang")
+	if lang != "" && (err != nil || strings.HasSuffix(req.Referer(), "/changelang")) {
+		rw.Header().Add("Set-Cookie", "lang="+lang)
+	}
 }
 
 func (b *Brog) startWatchers() error {
@@ -152,16 +165,9 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 	var posts []*post
 	if b.Config.Multilingual {
-		lang := req.URL.RawQuery
-		langCookie, err := req.Cookie("lang")
-		if lang != "" {
-			if err != nil || strings.HasSuffix(req.Referer(), "/changelang") {
-				rw.Header().Add("Set-Cookie", "lang="+lang)
-			}
-		} else if err == nil {
-			lang = langCookie.Value
-		}
-		if !b.validLangInQuery(lang) {
+		lang, validLang := b.extractLanguage(req)
+		b.setLangCookie(req, rw)
+		if !validLang {
 			b.langSelectFunc(rw, req)
 			return
 		}
@@ -173,9 +179,9 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	data := appContent{
-		Posts:   posts,
+		Posts:     posts,
 		Languages: b.Config.Languages,
-		CurPost: nil,
+		CurPost:   nil,
 	}
 
 	b.tmplMngr.DoWithIndex(func(t *template.Template) {
@@ -191,9 +197,9 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	/* If the lang is already set, reset it */
 	b.Debug("Language not set for multilingual blog")
 	data := appContent{
-		Posts: nil,
+		Posts:     nil,
 		Languages: b.Config.Languages,
-		CurPost: nil,
+		CurPost:   nil,
 	}
 
 	b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
@@ -218,9 +224,9 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	data := appContent{
-		Posts:   nil,
+		Posts:     nil,
 		Languages: b.Config.Languages,
-		CurPost: post,
+		CurPost:   post,
 	}
 
 	b.tmplMngr.DoWithPost(func(t *template.Template) {
