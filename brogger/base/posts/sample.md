@@ -3,7 +3,8 @@
     "author":"Antoine Grondin",
     "date":"2013-10-30T23:59:59.000Z",
     "invisible": true,
-    "abstract":"My first post using Brog"
+    "abstract":"My first post using Brog",
+    "language": "en"
 }
 # Hello!!
 This is my first Brog post.  I really like broging and feeling like I'm
