@@ -3,7 +3,7 @@ package brogger
 import (
 	"fmt"
 	"net/http"
-	"path/filepath"
+	"path"
 	"runtime"
 	"strings"
 	"text/template"
@@ -25,6 +25,10 @@ type appContent struct {
 	Languages []string
 	CurPost   *post
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Brog exported funcs
+////////////////////////////////////////////////////////////////////////////////
 
 // PrepareBrog creates a Brog instance, loading it's configuration from
 // a file named `ConfigFilename` that must lie at the current working
@@ -115,6 +119,130 @@ func (b *Brog) ListenAndServe() error {
 	return http.ListenAndServe(addr, nil)
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Helpers
+////////////////////////////////////////////////////////////////////////////////
+
+func (b *Brog) startWatchers() error {
+	b.Debug("Starting watchers")
+
+	tmplMngr, err := startTemplateManager(b, b.Config.TemplatePath)
+	if err != nil {
+		return fmt.Errorf("starting template manager, %v", err)
+	}
+	b.tmplMngr = tmplMngr
+
+	postMngr, err := startPostManager(b, b.Config.PostPath)
+	if err != nil {
+		return fmt.Errorf("starting post manager, %v", err)
+	}
+	b.postMngr = postMngr
+	return nil
+}
+
+// Logging helpers
+
+func (b *Brog) logHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+
+		b.Ok("request by %s for '%s' as '%s'",
+			req.RemoteAddr, req.RequestURI, req.UserAgent())
+
+		now := time.Now()
+		h.ServeHTTP(w, req)
+		b.Ok("Done in %s", time.Since(now))
+	})
+}
+
+func (b *Brog) logHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+
+		b.Ok("request by %s for '%s' as '%s'",
+			req.RemoteAddr, req.RequestURI, req.UserAgent())
+
+		now := time.Now()
+		h.ServeHTTP(w, req)
+		b.Ok("Done in %s", time.Since(now))
+	})
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// HandlerFuncs
+////////////////////////////////////////////////////////////////////////////////
+
+// heartBeat answers 200 to any request.
+func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
+	b.Debug("Hearbeat!")
+	rw.WriteHeader(http.StatusOK)
+}
+
+func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
+
+	var posts []*post
+	if b.Config.Multilingual {
+		lang, validLang := b.extractLanguage(req)
+		b.setLangCookie(req, rw)
+		if !validLang {
+			b.langSelectFunc(rw, req)
+			return
+		}
+		posts = b.postMngr.GetAllPostsWithLanguage(lang)
+		b.Debug("Serving %d posts with language %s to requester", len(posts), lang)
+	} else {
+		posts = b.postMngr.GetAllPosts()
+	}
+
+	data := appContent{
+		Posts:     posts,
+		Languages: b.Config.Languages,
+		CurPost:   nil,
+	}
+
+	b.tmplMngr.DoWithIndex(func(t *template.Template) {
+		if err := t.Execute(rw, data); err != nil {
+			b.Err("serving index request, %v", err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
+
+	postID := path.Base(req.RequestURI)
+	post, ok := b.postMngr.GetPost(postID)
+	if !ok {
+		b.Warn("not found, %v", req)
+		http.NotFound(rw, req)
+		return
+	}
+
+	data := appContent{
+		Posts:     nil,
+		Languages: b.Config.Languages,
+		CurPost:   post,
+	}
+
+	b.tmplMngr.DoWithPost(func(t *template.Template) {
+		if err := t.Execute(rw, data); err != nil {
+			b.Err("serving post request for ID=%s, %v", postID, err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+// Multilingual support
+
+func (b *Brog) validLangInQuery(lang string) bool {
+	for _, val := range b.Config.Languages {
+		if strings.Contains(lang, val) {
+			return true
+		}
+	}
+	return false
+}
+
 func (b *Brog) extractLanguage(req *http.Request) (string, bool) {
 	lang := req.URL.RawQuery
 	langCookie, err := req.Cookie("lang")
@@ -139,64 +267,7 @@ func (b *Brog) setLangCookie(req *http.Request, rw http.ResponseWriter) {
 	}
 }
 
-func (b *Brog) startWatchers() error {
-	b.Debug("Starting watchers")
-
-	tmplMngr, err := startTemplateManager(b, b.Config.TemplatePath)
-	if err != nil {
-		return fmt.Errorf("starting template manager, %v", err)
-	}
-	b.tmplMngr = tmplMngr
-
-	postMngr, err := startPostManager(b, b.Config.PostPath)
-	if err != nil {
-		return fmt.Errorf("starting post manager, %v", err)
-	}
-	b.postMngr = postMngr
-	return nil
-}
-
-// heartBeat answers 200 to any request.
-func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
-	b.Debug("Hearbeat!")
-	rw.WriteHeader(http.StatusOK)
-}
-
-func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
-	defer statCount(b, req)()
-
-	var posts []*post
-	if b.Config.Multilingual {
-		lang, validLang := b.extractLanguage(req)
-		b.setLangCookie(req, rw)
-		if !validLang {
-			b.langSelectFunc(rw, req)
-			return
-		}
-		posts = b.postMngr.GetAllPostsWithLanguage(lang)
-		b.Debug("Serving %d posts with language %s to requester", len(posts), lang)
-	} else {
-		posts = b.postMngr.GetAllPosts()
-		b.Debug("Serving %d posts to requester", len(posts))
-	}
-
-	data := appContent{
-		Posts:     posts,
-		Languages: b.Config.Languages,
-		CurPost:   nil,
-	}
-
-	b.tmplMngr.DoWithIndex(func(t *template.Template) {
-		if err := t.Execute(rw, data); err != nil {
-			b.Err("serving index request, %v", err)
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
-}
-
 func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
-	/* If the lang is already set, reset it */
 	b.Debug("Language not set for multilingual blog")
 	data := appContent{
 		Posts:     nil,
@@ -212,37 +283,4 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 	})
-}
-
-func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
-	defer statCount(b, req)()
-
-	postID := filepath.Base(req.RequestURI)
-	post, ok := b.postMngr.GetPost(postID)
-	if !ok {
-		b.Warn("not found, %v", req)
-		http.NotFound(rw, req)
-		return
-	}
-
-	data := appContent{
-		Posts:     nil,
-		Languages: b.Config.Languages,
-		CurPost:   post,
-	}
-
-	b.tmplMngr.DoWithPost(func(t *template.Template) {
-		if err := t.Execute(rw, data); err != nil {
-			b.Err("serving post request for ID=%s, %v", postID, err)
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
-}
-
-func statCount(b *Brog, req *http.Request) func() {
-	now := time.Now()
-	return func() {
-		b.Ok("Done in %s, req=%v", time.Since(now), req.URL)
-	}
 }
