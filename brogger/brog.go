@@ -100,11 +100,13 @@ func (b *Brog) ListenAndServe() error {
 		return fmt.Errorf("starting watchers, %v", err)
 	}
 
-	http.HandleFunc("/heartbeat", b.heartBeat)
-	http.HandleFunc("/changelang", b.langSelectFunc)
-	http.HandleFunc("/posts/", b.postFunc)
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(b.Config.AssetPath))))
-	http.HandleFunc("/", b.indexFunc)
+	http.HandleFunc("/heartbeat", b.heartBeat) // don't log heartbeat, too noisy
+	http.HandleFunc("/changelang", b.logHandlerFunc(b.langSelectFunc))
+	http.HandleFunc("/posts/", b.logHandlerFunc(b.postFunc))
+	http.HandleFunc("/", b.logHandlerFunc(b.indexFunc))
+
+	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
+	http.Handle("/assets/", http.StripPrefix("/assets/", b.logHandler(fileServer)))
 
 	b.Ok("Assimilation completed.")
 	if b.isProd {
