@@ -99,7 +99,7 @@ func (b *Brog) ListenAndServe() error {
 		return fmt.Errorf("starting watchers, %v", err)
 	}
 
-	http.HandleFunc("/heartbeat", b.logHandlerFunc(b.heartBeat))
+	http.HandleFunc("/heartbeat", b.heartBeat) // don't log heartbeat, too noisy
 	http.HandleFunc("/posts/", b.logHandlerFunc(b.postFunc))
 	http.HandleFunc("/", b.logHandlerFunc(b.indexFunc))
 
