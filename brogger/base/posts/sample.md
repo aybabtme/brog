@@ -28,4 +28,4 @@ _Shhhh_.
 * He has a nice way of mispeaking English.
 * He prefers Star Trek to Star Wars.
 
-[1]: en.wikipedia.org/wiki/Borg_(Star_Trek)
+[1]: https://en.wikipedia.org/wiki/Borg_(Star_Trek)
