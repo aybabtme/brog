@@ -155,6 +155,12 @@ func (config *Config) persistToFile(filename string) error {
 		return fmt.Errorf("writing configuration to file '%s', %v", filename, err)
 	}
 
+	/* Add newline to the end of file */
+	_, err = confFile.WriteString("\n")
+	if err != nil {
+		return fmt.Errorf("writing newline to configuration file '%s', %v", filename, err)
+	}
+
 	if err := confFile.Close(); err != nil {
 		return fmt.Errorf("closing config file '%s', %v", filename, err)
 	}

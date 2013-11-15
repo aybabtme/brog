@@ -1,0 +1,20 @@
+{
+   "prodPortNumber": 80,
+   "develPortNumber": 3000,
+   "hostName": "localhost",
+   "maxCpus": 0,
+   "templatePath": "templates",
+   "postPath": "posts",
+   "assetPath": "assets",
+   "postFileExtension": ".md",
+   "logFilename": "brog.log",
+   "logFileVerbosity": "watch",
+   "consoleVerbosity": "debug",
+   "rewriteInvalid": true,
+   "rewriteMissing": true,
+   "multilingual": true,
+   "languages": [
+      "en",
+      "fr"
+   ]
+}
