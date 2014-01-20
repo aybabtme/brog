@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -16,8 +17,8 @@ const (
 
 // Defaults for Brog's configuration.
 var (
-	DefaultProdPortNumber   = 80
-	DefaultDevelPortNumber  = 3000
+	DefaultProdPort         = "80"
+	DefaultDevelPort        = "3000"
 	DefaultHostname         = "localhost"
 	DefaultMaxCPUs          = runtime.NumCPU()
 	DefaultTemplatePath     = "templates" + string(os.PathSeparator)
@@ -36,8 +37,8 @@ var (
 // Config contains all the settings that a Brog uses to watch and create
 // and serve posts, log events and execute in general.
 type Config struct {
-	ProdPortNumber   int      `json:"prodPortNumber"`
-	DevelPortNumber  int      `json:"develPortNumber"`
+	ProdPort         string   `json:"prodPort"`
+	DevelPort        string   `json:"develPort"`
 	Hostname         string   `json:"hostName"`
 	MaxCPUs          int      `json:"maxCpus"`
 	TemplatePath     string   `json:"templatePath"`
@@ -55,8 +56,8 @@ type Config struct {
 
 func newDefaultConfig() *Config {
 	return &Config{
-		ProdPortNumber:   DefaultProdPortNumber,
-		DevelPortNumber:  DefaultDevelPortNumber,
+		ProdPort:         DefaultProdPort,
+		DevelPort:        DefaultDevelPort,
 		Hostname:         DefaultHostname,
 		MaxCPUs:          DefaultMaxCPUs,
 		TemplatePath:     filepath.Clean(DefaultTemplatePath),
@@ -74,12 +75,13 @@ func newDefaultConfig() *Config {
 }
 
 func (c *Config) selfValidate() error {
-	if c.ProdPortNumber < 1 || c.ProdPortNumber > 1<<16 {
-		return fmt.Errorf("invalid port range (%d)", c.ProdPortNumber)
+	portnum, err := strconv.ParseInt(c.ProdPort, 10, 0)
+	if err == nil && (portnum < 1 || portnum > 1<<16) {
+		return fmt.Errorf("invalid port range (%d)", portnum)
 	}
-
-	if c.DevelPortNumber < 1 || c.DevelPortNumber > 1<<16 {
-		return fmt.Errorf("invalid port range (%d)", c.ProdPortNumber)
+	portnum, err = strconv.ParseInt(c.DevelPort, 10, 64)
+	if err == nil && (portnum < 1 || portnum > 1<<16) {
+		return fmt.Errorf("invalid port range (%d)", portnum)
 	}
 
 	if c.MaxCPUs < 0 {

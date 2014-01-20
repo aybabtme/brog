@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -89,11 +90,16 @@ func (b *Brog) ListenAndServe() error {
 
 	runtime.GOMAXPROCS(b.Config.MaxCPUs)
 
-	var port int
+	var sock string
 	if b.isProd {
-		port = b.Config.ProdPortNumber
+		sock = b.Config.ProdPort
 	} else {
-		port = b.Config.DevelPortNumber
+		sock = b.Config.DevelPort
+	}
+	port, err := strconv.ParseInt(sock, 10, 0)
+
+	if err != nil {
+		return err
 	}
 	addr := fmt.Sprintf("%s:%d", b.Config.Hostname, port)
 

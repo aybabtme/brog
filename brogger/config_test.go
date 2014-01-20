@@ -14,28 +14,28 @@ func TestSelfValidate(t *testing.T) {
 	if err != nil {
 		t.Error("Error validating default conig")
 	}
-	config.ProdPortNumber = -1
+	config.ProdPort = -1
 	err = config.selfValidate()
 	if err == nil {
 		t.Error("-1 is not a valid production port number")
 	}
-	config.ProdPortNumber = 65600
+	config.ProdPort = 65600
 	err = config.selfValidate()
 	if err == nil {
 		t.Error("656000 is not a valid production port number")
 	}
-	config.ProdPortNumber = DefaultProdPortNumber
-	config.DevelPortNumber = -1
+	config.ProdPort = DefaultProdPort
+	config.DevelPort = -1
 	err = config.selfValidate()
 	if err == nil {
 		t.Error("-1 is not a valid development port number")
 	}
-	config.DevelPortNumber = 65600
+	config.DevelPort = 65600
 	err = config.selfValidate()
 	if err == nil {
 		t.Error("65600 is not a valid development port number")
 	}
-	config.DevelPortNumber = DefaultDevelPortNumber
+	config.DevelPort = DefaultDevelPort
 	config.MaxCPUs = -1
 	err = config.selfValidate()
 	if err == nil {
