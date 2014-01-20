@@ -2,6 +2,7 @@ package brogger
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"path"
 	"runtime"
@@ -98,12 +99,15 @@ func (b *Brog) ListenAndServe() error {
 	}
 	port, err := strconv.ParseInt(sock, 10, 0)
 
-	if err != nil {
-		return err
+	var addr string
+	if err == nil {
+		addr = fmt.Sprintf("%s:%d", b.Config.Hostname, port)
+		b.Ok("CAPTAIN: Open channel, %s", addr)
+	} else {
+		addr = ""
+		b.Ok("CAPTAIN: Open channel, unix://%s", sock)
 	}
-	addr := fmt.Sprintf("%s:%d", b.Config.Hostname, port)
 
-	b.Ok("CAPTAIN: Open channel, %s", addr)
 	b.Warn("ON SCREEN: We are the Brog. Resistance is futile.")
 
 	if err := b.startWatchers(); err != nil {
@@ -122,7 +126,16 @@ func (b *Brog) ListenAndServe() error {
 	if b.isProd {
 		b.Warn("Going live in production.")
 	}
-	return http.ListenAndServe(addr, nil)
+	var l net.Listener
+	if addr != "" {
+		l, err = net.Listen("tcp", addr)
+	} else {
+		l, err = net.Listen("unix", sock)
+	}
+	if err != nil {
+		return err
+	}
+	return http.Serve(l, nil)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
