@@ -55,6 +55,10 @@ func PrepareBrog(isProd bool) (*Brog, error) {
 		isProd: isProd,
 	}
 
+	if isProd {
+		brog.writePID()
+	}
+
 	return brog, nil
 }
 
@@ -320,4 +324,28 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 	})
+}
+
+// write PID because sysadmin
+
+func (b *brogger.Brog) writePID() {
+	pid := os.Getpid()
+	b.Ok("This is the PID: %v", pid) //Needs suitable Star Trek reference
+
+	fpid, err := os.Create("brog.pid")
+	if err != nil {
+		panic(err)
+	}
+
+	// close fpid on exit and check if it returned error
+	defer func() {
+		if err := fpid.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	_, err = fpid.Write([]byte(strconv.Itoa(pid)))
+	if err != nil {
+		panic(err)
+	}
 }
