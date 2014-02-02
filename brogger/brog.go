@@ -224,13 +224,17 @@ func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
 
 func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
-	if b.Config.Multilingual {
-		b.langIndexFunc(rw, req)
+	pages, lang := b.getPages(req, rw)
+	if pages == nil {
 		return
 	}
 
-	posts := b.postMngr.GetAllPosts()
-	pages := b.pageMngr.GetAllPosts()
+	var posts []*post
+	if lang == "" {
+		posts = b.postMngr.GetAllPosts()
+	} else {
+		posts = b.postMngr.GetAllPostsWithLanguage(lang)
+	}
 
 	data := appContent{
 		Posts:     posts,
@@ -249,6 +253,11 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
+	pages, _ := b.getPages(req, rw)
+
+	if pages == nil {
+		return
+	}
 
 	postID := path.Base(req.RequestURI)
 	post, ok := b.postMngr.GetPost(postID)
@@ -257,8 +266,6 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 		http.NotFound(rw, req)
 		return
 	}
-
-	pages := b.pageMngr.GetAllPosts()
 
 	data := appContent{
 		Posts:     nil,
@@ -277,6 +284,11 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
+	pages, _ := b.getPages(req, rw)
+
+	if pages == nil {
+		return
+	}
 
 	pageID := path.Base(req.RequestURI)
 	page, ok := b.pageMngr.GetPost(pageID)
@@ -285,8 +297,6 @@ func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
 		http.NotFound(rw, req)
 		return
 	}
-
-	pages := b.pageMngr.GetAllPosts()
 
 	data := appContent{
 		Posts:     nil,
@@ -305,33 +315,6 @@ func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
 }
 
 // Multilingual support
-
-func (b *Brog) langIndexFunc(rw http.ResponseWriter, req *http.Request) {
-	lang, validLang := b.extractLanguage(req)
-	b.setLangCookie(req, rw)
-	if !validLang {
-		b.langSelectFunc(rw, req)
-		return
-	}
-
-	posts := b.postMngr.GetAllPostsWithLanguage(lang)
-	pages := b.pageMngr.GetAllPostsWithLanguage(lang)
-
-	data := appContent{
-		Posts:     posts,
-		Pages:     pages,
-		Languages: b.Config.Languages,
-		CurPost:   nil,
-	}
-
-	b.tmplMngr.DoWithIndex(func(t *template.Template) {
-		if err := t.Execute(rw, data); err != nil {
-			b.Err("serving index request, %v", err)
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
-}
 
 func (b *Brog) validLangInQuery(lang string) bool {
 	for _, val := range b.Config.Languages {
@@ -370,6 +353,7 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	b.Debug("Language not set for multilingual blog")
 	data := appContent{
 		Posts:     nil,
+		Pages:     nil,
 		Languages: b.Config.Languages,
 		CurPost:   nil,
 	}
@@ -394,4 +378,17 @@ func (b *Brog) writePID() error {
 	}
 
 	return nil
+}
+
+func (b *Brog) getPages(req *http.Request, rw http.ResponseWriter) ([]*post, string) {
+	if b.Config.Multilingual {
+		lang, validLang := b.extractLanguage(req)
+		b.setLangCookie(req, rw)
+		if !validLang {
+			b.langSelectFunc(rw, req)
+			return nil, ""
+		}
+		return b.pageMngr.GetAllPostsWithLanguage(lang), lang
+	}
+	return b.pageMngr.GetAllPosts(), ""
 }
