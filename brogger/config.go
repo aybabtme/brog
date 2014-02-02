@@ -23,6 +23,7 @@ var (
 	DefaultMaxCPUs          = runtime.NumCPU()
 	DefaultTemplatePath     = "templates" + string(os.PathSeparator)
 	DefaultPostPath         = "posts" + string(os.PathSeparator)
+	DefaultPagePath         = "pages" + string(os.PathSeparator)
 	DefaultAssetPath        = "assets" + string(os.PathSeparator)
 	DefaultPostFileExt      = ".md"
 	DefaultLogFilename      = "brog.log"
@@ -43,6 +44,7 @@ type Config struct {
 	MaxCPUs          int      `json:"maxCpus"`
 	TemplatePath     string   `json:"templatePath"`
 	PostPath         string   `json:"postPath"`
+	PagePath         string   `json:"pagePath"`
 	AssetPath        string   `json:"assetPath"`
 	PostFileExt      string   `json:"postFileExtension"`
 	LogFilename      string   `json:"logFilename"`
@@ -101,8 +103,7 @@ func (cfg *Config) selfValidate() error {
 
 func loadConfig() (*Config, error) {
 	if !fileExists(ConfigFilename) {
-		return nil, fmt.Errorf("there is no brog config file named '%s' here", ConfigFilename)
-
+		return nil, fmt.Errorf("there is no brog config file named '%s' here. ", ConfigFilename)
 	}
 	return loadFromFile()
 }
@@ -141,7 +142,6 @@ func loadFromFile() (*Config, error) {
 }
 
 func (cfg *Config) persistToFile(filename string) error {
-
 	jsonData, err := json.MarshalIndent(cfg, "", strings.Repeat(" ", JSONIndentCount))
 	if err != nil {
 		return fmt.Errorf("marshalling config data, %v", err)

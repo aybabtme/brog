@@ -5,6 +5,7 @@
    "maxCpus": 0,
    "templatePath": "templates",
    "postPath": "posts",
+    "pagePath": "pages",
    "assetPath": "assets",
    "postFileExtension": ".md",
    "logFilename": "brog.log",

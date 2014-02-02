@@ -13,6 +13,8 @@ const (
 	Init = "init"
 	// Create a new blank post in the post folder
 	Create = "create"
+	// Create a new blank page in the page folder
+	Page = "page"
 	// Server starts brog at the current path
 	Server = "server"
 	// Help shows the usage string
@@ -36,6 +38,9 @@ The following are brog's valid commands with the arguments they take :
                           default, brog runs in development mode.
 
     brog create [name]    Creates a blank post in file [name], in the
+                          location specified by the config file.
+
+    brog page [name]      Creates a blank page in file [name], in the
                           location specified by the config file.
 
     brog help             Shows this message.
@@ -65,8 +70,11 @@ func main() {
 			return
 		case Create:
 			followingWords := strings.Join(commands[i+1:], "_")
-			doCreate(followingWords)
+			doCreate(followingWords, false)
 			return
+		case Page:
+			followingWords := strings.Join(commands[i+1:], "_")
+			doCreate(followingWords, true)
 		case Help:
 		default:
 			printPreBrogError("Unknown command: %s.\n", arg)
@@ -114,7 +122,7 @@ func doServer(isProd bool) {
 
 }
 
-func doCreate(newPostFilename string) {
+func doCreate(newPostFilename string, isPage bool) {
 	brog, err := brogger.PrepareBrog(false)
 	if err != nil {
 		printPreBrogError("Couldn't create new post.\n")
@@ -124,9 +132,15 @@ func doCreate(newPostFilename string) {
 	}
 	defer closeOrPanic(brog)
 
-	err = brogger.CopyBlankToFilename(brog.Config, newPostFilename)
+	err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, isPage)
 	if err != nil {
-		brog.Err("Brog post creation failed, %v.", err)
+		var creationtype string
+		if isPage {
+			creationtype = "page"
+		} else {
+			creationtype = "post"
+		}
+		brog.Err("Brog %s creation failed, %v.", creationtype, err)
 		brog.Err("Why do you resist?")
 		return
 	}
