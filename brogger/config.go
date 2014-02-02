@@ -64,6 +64,7 @@ func newDefaultConfig() *Config {
 		MaxCPUs:          DefaultMaxCPUs,
 		TemplatePath:     filepath.Clean(DefaultTemplatePath),
 		PostPath:         filepath.Clean(DefaultPostPath),
+		PagePath:         filepath.Clean(DefaultPagePath),
 		AssetPath:        filepath.Clean(DefaultAssetPath),
 		PostFileExt:      DefaultPostFileExt,
 		LogFilename:      filepath.Clean(DefaultLogFilename),

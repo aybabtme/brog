@@ -28,9 +28,8 @@ var allAssets = map[string]packed{
 	"sample.md": {"sample.md", DefaultPostPath, basePostsSampleMd},
 	"blank.md":  {"blank.md", DefaultPostPath, basePostsBlankMd},
 
-	// Base files
-	".gitignore": {".gitignore", "", baseGitignore},
-	"README.md":  {"README.md", "", baseREADMEMd},
+	// Base page
+	"about.md": {"about.md", DefaultPagePath, basePagesAboutMd},
 }
 
 var allTemplates = map[string]packed{
@@ -74,7 +73,7 @@ func (p *packed) rewriteInDir(dirname string) error {
 
 func (p *packed) rewriteFile(fullpath string) error {
 	if err := os.MkdirAll(p.destination, 0740); err != nil {
-		return fmt.Errorf("creating directory at '%s' failed, %v", p.destination, err)
+		return fmt.Errorf("creating directory at '%s' failed, %v, %s", p.destination, err, string(p.data))
 	}
 	return ioutil.WriteFile(fullpath, p.data, 0640)
 }
@@ -95,6 +94,7 @@ func CopyBrogBinaries() []error {
 	for _, asset := range allAssets {
 		err := asset.replicate()
 		if err != nil {
+			fmt.Errorf("Error in asset %s", asset.filename)
 			errs = append(errs, err)
 		}
 	}

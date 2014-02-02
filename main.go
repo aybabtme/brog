@@ -75,6 +75,7 @@ func main() {
 		case Page:
 			followingWords := strings.Join(commands[i+1:], "_")
 			doCreate(followingWords, true)
+			return
 		case Help:
 		default:
 			printPreBrogError("Unknown command: %s.\n", arg)
