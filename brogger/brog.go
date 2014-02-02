@@ -18,6 +18,7 @@ type Brog struct {
 	*logMux
 	isProd   bool
 	Config   *Config
+	Pid      string
 	tmplMngr *templateManager
 	postMngr *postManager
 }
@@ -328,9 +329,9 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 
 // write PID because sysadmin
 
-func (b *brogger.Brog) writePID() {
-	pid := os.Getpid()
-	b.Ok("This is the PID: %v", pid) //Needs suitable Star Trek reference
+func (b *Brog) writePID() {
+	b.Pid = os.Getpid()
+	b.Ok("This is the PID: %v", b.Pid) //Needs suitable Star Trek reference
 
 	fpid, err := os.Create("brog.pid")
 	if err != nil {
@@ -344,7 +345,7 @@ func (b *brogger.Brog) writePID() {
 		}
 	}()
 
-	_, err = fpid.Write([]byte(strconv.Itoa(pid)))
+	_, err = fpid.Write([]byte(strconv.Itoa(b.Pid)))
 	if err != nil {
 		panic(err)
 	}
