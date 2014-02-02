@@ -3,7 +3,8 @@ brog
 
 The MIT License (MIT)
 
-Copyright (C) 2013 Antoine Grondin, William Pearson
+Copyright (C) 2013 Antoine Grondin
+Copyright (C) 2013-2014 William Pearson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
