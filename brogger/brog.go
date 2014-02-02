@@ -23,10 +23,12 @@ type Brog struct {
 	Pid      int
 	tmplMngr *templateManager
 	postMngr *postManager
+	pageMngr *postManager
 }
 
 type appContent struct {
 	Posts     []*post
+	Pages     []*post
 	Languages []string
 	CurPost   *post
 }
@@ -81,6 +83,10 @@ func (b *Brog) Close() error {
 		errHandler(b.postMngr.Close())
 	}
 
+	if b.pageMngr != nil {
+		errHandler(b.pageMngr.Close())
+	}
+
 	if b.tmplMngr != nil {
 		errHandler(b.tmplMngr.Close())
 	}
@@ -127,6 +133,7 @@ func (b *Brog) ListenAndServe() error {
 	http.HandleFunc("/heartbeat", b.heartBeat) // don't log heartbeat, too noisy
 	http.HandleFunc("/changelang", b.logHandlerFunc(b.langSelectFunc))
 	http.HandleFunc("/posts/", b.logHandlerFunc(b.postFunc))
+	http.HandleFunc("/pages/", b.logHandlerFunc(b.pageFunc))
 	http.HandleFunc("/", b.logHandlerFunc(b.indexFunc))
 
 	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
@@ -162,10 +169,20 @@ func (b *Brog) startWatchers() error {
 	b.tmplMngr = tmplMngr
 
 	postMngr, err := startPostManager(b, b.Config.PostPath)
+
 	if err != nil {
 		return fmt.Errorf("starting post manager, %v", err)
 	}
+
+	pageMngr, err := startPostManager(b, b.Config.PagePath)
+
+	if err != nil {
+		return fmt.Errorf("starting page manager, %v", err)
+	}
+
 	b.postMngr = postMngr
+	b.pageMngr = pageMngr
+
 	return nil
 }
 
@@ -213,9 +230,11 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	posts := b.postMngr.GetAllPosts()
+	pages := b.pageMngr.GetAllPosts()
 
 	data := appContent{
 		Posts:     posts,
+		Pages:     pages,
 		Languages: b.Config.Languages,
 		CurPost:   nil,
 	}
@@ -239,8 +258,11 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	pages := b.pageMngr.GetAllPosts()
+
 	data := appContent{
 		Posts:     nil,
+		Pages:     pages,
 		Languages: b.Config.Languages,
 		CurPost:   post,
 	}
@@ -248,6 +270,34 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 	b.tmplMngr.DoWithPost(func(t *template.Template) {
 		if err := t.Execute(rw, data); err != nil {
 			b.Err("serving post request for ID=%s, %v", postID, err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
+
+	pageID := path.Base(req.RequestURI)
+	page, ok := b.pageMngr.GetPost(pageID)
+	if !ok {
+		b.Warn("not found, %v", req)
+		http.NotFound(rw, req)
+		return
+	}
+
+	pages := b.pageMngr.GetAllPosts()
+
+	data := appContent{
+		Posts:     nil,
+		Pages:     pages,
+		Languages: b.Config.Languages,
+		CurPost:   page,
+	}
+
+	b.tmplMngr.DoWithPost(func(t *template.Template) {
+		if err := t.Execute(rw, data); err != nil {
+			b.Err("serving post request for ID=%s, %v", pageID, err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -265,9 +315,11 @@ func (b *Brog) langIndexFunc(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	posts := b.postMngr.GetAllPostsWithLanguage(lang)
+	pages := b.pageMngr.GetAllPostsWithLanguage(lang)
 
 	data := appContent{
 		Posts:     posts,
+		Pages:     pages,
 		Languages: b.Config.Languages,
 		CurPost:   nil,
 	}
