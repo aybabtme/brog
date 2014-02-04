@@ -46,6 +46,11 @@ h2 a {
 blockquote {
     font-style: italic; }
 
+.page-link {
+    float:left;
+    margin-right:5px;
+}
+
 /* Code styling, taken from golang.org and modified */
 
 pre,
