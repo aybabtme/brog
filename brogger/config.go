@@ -74,34 +74,34 @@ func newDefaultConfig() *Config {
 	}
 }
 
-func (c *Config) selfValidate() error {
-	portnum, err := strconv.ParseInt(c.ProdPort, 10, 0)
+func (cfg *Config) selfValidate() error {
+	portnum, err := strconv.ParseInt(cfg.ProdPort, 10, 0)
 	if err == nil && (portnum < 1 || portnum > 1<<16) {
 		return fmt.Errorf("invalid port range (%d)", portnum)
 	}
-	portnum, err = strconv.ParseInt(c.DevelPort, 10, 64)
+	portnum, err = strconv.ParseInt(cfg.DevelPort, 10, 64)
 	if err == nil && (portnum < 1 || portnum > 1<<16) {
 		return fmt.Errorf("invalid port range (%d)", portnum)
 	}
 
-	if c.MaxCPUs < 0 {
-		return fmt.Errorf("invalid CPU count (%d)", c.MaxCPUs)
+	if cfg.MaxCPUs < 0 {
+		return fmt.Errorf("invalid CPU count (%d)", cfg.MaxCPUs)
 	}
 
-	if c.PostFileExt == "" {
-		return fmt.Errorf("invalid Post file extension (%s)", c.PostFileExt)
+	if cfg.PostFileExt == "" {
+		return fmt.Errorf("invalid Post file extension (%s)", cfg.PostFileExt)
 	}
-	c.AssetPath = filepath.Clean(c.AssetPath)
-	c.PostPath = filepath.Clean(c.PostPath)
-	c.TemplatePath = filepath.Clean(c.TemplatePath)
-	c.LogFilename = filepath.Clean(c.LogFilename)
+	cfg.AssetPath = filepath.Clean(cfg.AssetPath)
+	cfg.PostPath = filepath.Clean(cfg.PostPath)
+	cfg.TemplatePath = filepath.Clean(cfg.TemplatePath)
+	cfg.LogFilename = filepath.Clean(cfg.LogFilename)
 
 	return nil
 }
 
 func loadConfig() (*Config, error) {
 	if !fileExists(ConfigFilename) {
-		return nil, fmt.Errorf("there is no brog config file named '%s' here.", ConfigFilename)
+		return nil, fmt.Errorf("there is no brog config file named '%s' here", ConfigFilename)
 
 	}
 	return loadFromFile()
@@ -140,9 +140,9 @@ func loadFromFile() (*Config, error) {
 	return &config, nil
 }
 
-func (config *Config) persistToFile(filename string) error {
+func (cfg *Config) persistToFile(filename string) error {
 
-	jsonData, err := json.MarshalIndent(config, "", strings.Repeat(" ", JSONIndentCount))
+	jsonData, err := json.MarshalIndent(cfg, "", strings.Repeat(" ", JSONIndentCount))
 	if err != nil {
 		return fmt.Errorf("marshalling config data, %v", err)
 	}
