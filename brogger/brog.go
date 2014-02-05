@@ -334,12 +334,11 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 
 // write PID because sysadmin
 func (b *Brog) writePID() error {
-	b.Ok("Assimilating drone of species # %v", b.Pid)
+	b.Ok("Assimilating drone of species #%d", b.Pid)
 
 	pidBytes := []byte(strconv.Itoa(b.Pid))
 	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
-		fmt.Errorf("Error writing to PID file: %v", err)
-		return err
+		return fmt.Errorf("error writing to PID file: %v", err)
 	}
 
 	return nil
