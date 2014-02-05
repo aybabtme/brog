@@ -73,7 +73,7 @@ func (p *packed) rewriteInDir(dirname string) error {
 
 func (p *packed) rewriteFile(fullpath string) error {
 	if err := os.MkdirAll(p.destination, 0740); err != nil {
-		return fmt.Errorf("creating directory at '%s' failed, %v, %s", p.destination, err, string(p.data))
+		return fmt.Errorf("creating directory at '%s' failed, %v", p.destination, err)
 	}
 	return ioutil.WriteFile(fullpath, p.data, 0640)
 }
