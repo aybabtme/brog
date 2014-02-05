@@ -2,8 +2,10 @@ package brogger
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"path"
 	"runtime"
 	"strconv"
@@ -18,6 +20,7 @@ type Brog struct {
 	*logMux
 	isProd   bool
 	Config   *Config
+	Pid      int
 	tmplMngr *templateManager
 	postMngr *postManager
 }
@@ -53,6 +56,13 @@ func PrepareBrog(isProd bool) (*Brog, error) {
 		logMux: logMux,
 		Config: config,
 		isProd: isProd,
+		Pid:    os.Getpid(),
+	}
+
+	if isProd {
+		if err := brog.writePID(); err != nil {
+			panic(err)
+		}
 	}
 
 	return brog, nil
@@ -320,4 +330,16 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 	})
+}
+
+// write PID because sysadmin
+func (b *Brog) writePID() error {
+	b.Ok("Assimilating drone of species #%d", b.Pid)
+
+	pidBytes := []byte(strconv.Itoa(b.Pid))
+	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
+		return fmt.Errorf("error writing to PID file: %v", err)
+	}
+
+	return nil
 }
