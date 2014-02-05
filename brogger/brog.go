@@ -2,8 +2,10 @@ package brogger
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"path"
 	"runtime"
 	"strconv"
@@ -18,7 +20,7 @@ type Brog struct {
 	*logMux
 	isProd   bool
 	Config   *Config
-	Pid      string
+	Pid      int
 	tmplMngr *templateManager
 	postMngr *postManager
 }
@@ -54,10 +56,13 @@ func PrepareBrog(isProd bool) (*Brog, error) {
 		logMux: logMux,
 		Config: config,
 		isProd: isProd,
+		Pid:    os.Getpid(),
 	}
 
 	if isProd {
-		brog.writePID()
+		if err := brog.writePID(); err != nil {
+			panic(err)
+		}
 	}
 
 	return brog, nil
@@ -328,25 +333,14 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 }
 
 // write PID because sysadmin
+func (b *Brog) writePID() error {
+	b.Ok("Assimilating drone of species # %v", b.Pid)
 
-func (b *Brog) writePID() {
-	b.Pid = os.Getpid()
-	b.Ok("This is the PID: %v", b.Pid) //Needs suitable Star Trek reference
-
-	fpid, err := os.Create("brog.pid")
-	if err != nil {
-		panic(err)
+	pidBytes := []byte(strconv.Itoa(b.Pid))
+	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
+		fmt.Errorf("Error writing to PID file: %v", err)
+		return err
 	}
 
-	// close fpid on exit and check if it returned error
-	defer func() {
-		if err := fpid.Close(); err != nil {
-			panic(err)
-		}
-	}()
-
-	_, err = fpid.Write([]byte(strconv.Itoa(b.Pid)))
-	if err != nil {
-		panic(err)
-	}
+	return nil
 }
