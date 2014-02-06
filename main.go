@@ -70,11 +70,11 @@ func main() {
 			return
 		case Create:
 			followingWords := strings.Join(commands[i+1:], "_")
-			doCreate(followingWords, false)
+			doCreate(followingWords, "post")
 			return
 		case Page:
 			followingWords := strings.Join(commands[i+1:], "_")
-			doCreate(followingWords, true)
+			doCreate(followingWords, "page")
 			return
 		case Help:
 		default:
@@ -123,7 +123,7 @@ func doServer(isProd bool) {
 
 }
 
-func doCreate(newPostFilename string, isPage bool) {
+func doCreate(newPostFilename string, creationType string) {
 	brog, err := brogger.PrepareBrog(false)
 	if err != nil {
 		printPreBrogError("Couldn't create new post.\n")
@@ -133,14 +133,13 @@ func doCreate(newPostFilename string, isPage bool) {
 	}
 	defer closeOrPanic(brog)
 
-	err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, isPage)
+	var err error
+	if creationType == "page" {
+		err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, brog.Config.PagePath)
+	} else {
+		err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, brog.Config.PostPath)
+	}
 	if err != nil {
-		var creationType string
-		if isPage {
-			creationType = "page"
-		} else {
-			creationType = "post"
-		}
 		brog.Err("Brog %s creation failed, %v.", creationType, err)
 		brog.Err("Why do you resist?")
 		return

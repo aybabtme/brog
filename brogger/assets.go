@@ -111,15 +111,13 @@ func CopyBrogBinaries() []error {
 
 // CopyBlankToFilename creates a blank post at the given filename, under the asset
 // path specified by conf
-func CopyBlankToFilename(conf *Config, filename string, isPage bool) error {
+func CopyBlankToFilename(conf *Config, filename string, filenamepath string) error {
 	if filename == "" {
 		return fmt.Errorf("no filename specified")
 	}
-	var fullpath string
-	if isPage {
-		fullpath = filepath.Clean(conf.PagePath) + string(os.PathSeparator) + filename + conf.PostFileExt
-	} else {
-		fullpath = filepath.Clean(conf.PostPath) + string(os.PathSeparator) + filename + conf.PostFileExt
+	if filenamepath == "" {
+		filenamepath = conf.PostPath
 	}
+	fullpath = filepath.Clean(filenamepath) + string(os.PathSeparator) + filename + conf.PostFileExt
 	return ioutil.WriteFile(fullpath, basePostsBlankMd, 0640)
 }
