@@ -104,7 +104,7 @@ func (cfg *Config) selfValidate() error {
 
 func loadConfig() (*Config, error) {
 	if !fileExists(ConfigFilename) {
-		return nil, fmt.Errorf("there is no brog config file named '%s' here. ", ConfigFilename)
+		return nil, fmt.Errorf("there is no brog config file named '%s' here", ConfigFilename)
 	}
 	return loadFromFile()
 }

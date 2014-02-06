@@ -20,7 +20,7 @@ const (
 	// Help shows the usage string
 	Help = "help"
 
-	usage = `usage: brog {init | server [prod] | create [new post name]}
+	usage = `usage: brog {init | server [prod] | create [new post name] | page [new page name]}
 
 'brog' is a tool to initialize brog structures, serve the content
 of brog structures and create new posts in a brog structure.
@@ -135,13 +135,13 @@ func doCreate(newPostFilename string, isPage bool) {
 
 	err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, isPage)
 	if err != nil {
-		var creationtype string
+		var creationType string
 		if isPage {
-			creationtype = "page"
+			creationType = "page"
 		} else {
-			creationtype = "post"
+			creationType = "post"
 		}
-		brog.Err("Brog %s creation failed, %v.", creationtype, err)
+		brog.Err("Brog %s creation failed, %v.", creationType, err)
 		brog.Err("Why do you resist?")
 		return
 	}

@@ -169,19 +169,29 @@ func (b *Brog) startWatchers() error {
 	b.tmplMngr = tmplMngr
 
 	postMngr, err := startPostManager(b, b.Config.PostPath)
-
 	if err != nil {
 		return fmt.Errorf("starting post manager, %v", err)
 	}
 
 	pageMngr, err := startPostManager(b, b.Config.PagePath)
-
 	if err != nil {
 		return fmt.Errorf("starting page manager, %v", err)
 	}
 
 	b.postMngr = postMngr
 	b.pageMngr = pageMngr
+
+	return nil
+}
+
+// write PID because sysadmin
+func (b *Brog) writePID() error {
+	b.Ok("Assimilating drone of species #%d", b.Pid)
+
+	pidBytes := []byte(strconv.Itoa(b.Pid))
+	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
+		return fmt.Errorf("error writing to PID file: %v", err)
+	}
 
 	return nil
 }
@@ -226,6 +236,7 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 	pages, lang := b.getPages(req, rw)
 	if pages == nil {
+		// User went to language selection screen
 		return
 	}
 
@@ -253,9 +264,10 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
-	pages, _ := b.getPages(req, rw)
 
+	pages, _ := b.getPages(req, rw)
 	if pages == nil {
+		// User went to language selection screen
 		return
 	}
 
@@ -284,9 +296,10 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
-	pages, _ := b.getPages(req, rw)
 
+	pages, _ := b.getPages(req, rw)
 	if pages == nil {
+		// User went to language selection screen
 		return
 	}
 
@@ -314,7 +327,9 @@ func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
 	})
 }
 
+////////////////////////////////////////////////////////////////////////////////
 // Multilingual support
+////////////////////////////////////////////////////////////////////////////////
 
 func (b *Brog) validLangInQuery(lang string) bool {
 	for _, val := range b.Config.Languages {
@@ -366,18 +381,6 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 	})
-}
-
-// write PID because sysadmin
-func (b *Brog) writePID() error {
-	b.Ok("Assimilating drone of species #%d", b.Pid)
-
-	pidBytes := []byte(strconv.Itoa(b.Pid))
-	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
-		return fmt.Errorf("error writing to PID file: %v", err)
-	}
-
-	return nil
 }
 
 func (b *Brog) getPages(req *http.Request, rw http.ResponseWriter) ([]*post, string) {
