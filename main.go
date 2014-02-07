@@ -133,7 +133,6 @@ func doCreate(newPostFilename string, creationType string) {
 	}
 	defer closeOrPanic(brog)
 
-	var err error
 	if creationType == "page" {
 		err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, brog.Config.PagePath)
 	} else {

@@ -31,6 +31,7 @@ type appContent struct {
 	Pages     []*post
 	Languages []string
 	CurPost   *post
+	Redir     string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -132,9 +133,9 @@ func (b *Brog) ListenAndServe() error {
 
 	http.HandleFunc("/heartbeat", b.heartBeat) // don't log heartbeat, too noisy
 	http.HandleFunc("/changelang", b.logHandlerFunc(b.langSelectFunc))
-	http.HandleFunc("/posts/", b.logHandlerFunc(b.postFunc))
-	http.HandleFunc("/pages/", b.logHandlerFunc(b.pageFunc))
-	http.HandleFunc("/", b.logHandlerFunc(b.indexFunc))
+	http.HandleFunc("/posts/", b.logHandlerFunc(b.langHandlerFunc(b.postFunc)))
+	http.HandleFunc("/pages/", b.logHandlerFunc(b.langHandlerFunc(b.pageFunc)))
+	http.HandleFunc("/", b.logHandlerFunc(b.langHandlerFunc(b.indexFunc)))
 
 	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
 	http.Handle("/assets/", http.StripPrefix("/assets/", b.logHandler(fileServer)))
@@ -186,7 +187,7 @@ func (b *Brog) startWatchers() error {
 
 // write PID because sysadmin
 func (b *Brog) writePID() error {
-	b.Ok("Assimilating drone of species #%d", b.Pid)
+	b.Ok("Galactic coordinates: %d,%02d", b.Pid/100, b.Pid%100)
 
 	pidBytes := []byte(strconv.Itoa(b.Pid))
 	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
@@ -234,18 +235,9 @@ func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
 
 func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
-	pages, lang := b.getPages(req, rw)
-	if pages == nil {
-		// User went to language selection screen
-		return
-	}
-
-	var posts []*post
-	if lang == "" {
-		posts = b.postMngr.GetAllPosts()
-	} else {
-		posts = b.postMngr.GetAllPostsWithLanguage(lang)
-	}
+	lang, _ := b.extractLanguage(req)
+	pages := b.pageMngr.GetAllPostsWithLanguage(lang)
+	posts := b.postMngr.GetAllPostsWithLanguage(lang)
 
 	data := appContent{
 		Posts:     posts,
@@ -265,13 +257,10 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 
-	pages, _ := b.getPages(req, rw)
-	if pages == nil {
-		// User went to language selection screen
-		return
-	}
+	lang, _ := b.extractLanguage(req)
+	pages := b.pageMngr.GetAllPostsWithLanguage(lang)
 
-	postID := path.Base(req.RequestURI)
+	postID := path.Base(strings.SplitN(req.RequestURI, "?", 2)[0])
 	post, ok := b.postMngr.GetPost(postID)
 	if !ok {
 		b.Warn("not found, %v", req)
@@ -297,14 +286,12 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 
 func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
 
-	pages, _ := b.getPages(req, rw)
-	if pages == nil {
-		// User went to language selection screen
-		return
-	}
+	lang, _ := b.extractLanguage(req)
+	pages := b.pageMngr.GetAllPostsWithLanguage(lang)
 
-	pageID := path.Base(req.RequestURI)
+	pageID := path.Base(strings.SplitN(req.RequestURI, "?", 2)[0])
 	page, ok := b.pageMngr.GetPost(pageID)
+
 	if !ok {
 		b.Warn("not found, %v", req)
 		http.NotFound(rw, req)
@@ -366,11 +353,13 @@ func (b *Brog) setLangCookie(req *http.Request, rw http.ResponseWriter) {
 
 func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	b.Debug("Language not set for multilingual blog")
+
 	data := appContent{
 		Posts:     nil,
 		Pages:     nil,
 		Languages: b.Config.Languages,
 		CurPost:   nil,
+		Redir:     req.URL.Path,
 	}
 
 	b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
@@ -383,15 +372,16 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func (b *Brog) getPages(req *http.Request, rw http.ResponseWriter) ([]*post, string) {
-	if b.Config.Multilingual {
-		lang, validLang := b.extractLanguage(req)
-		b.setLangCookie(req, rw)
-		if !validLang {
-			b.langSelectFunc(rw, req)
-			return nil, ""
+func (b *Brog) langHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if b.Config.Multilingual {
+			_, validLang := b.extractLanguage(req)
+			b.setLangCookie(req, rw)
+			if !validLang {
+				b.langSelectFunc(rw, req)
+			} else {
+				h.ServeHTTP(rw, req)
+			}
 		}
-		return b.pageMngr.GetAllPostsWithLanguage(lang), lang
-	}
-	return b.pageMngr.GetAllPosts(), ""
+	})
 }

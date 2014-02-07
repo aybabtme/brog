@@ -118,6 +118,6 @@ func CopyBlankToFilename(conf *Config, filename string, filenamepath string) err
 	if filenamepath == "" {
 		filenamepath = conf.PostPath
 	}
-	fullpath = filepath.Clean(filenamepath) + string(os.PathSeparator) + filename + conf.PostFileExt
+	fullpath := filepath.Clean(filenamepath) + string(os.PathSeparator) + filename + conf.PostFileExt
 	return ioutil.WriteFile(fullpath, basePostsBlankMd, 0640)
 }
