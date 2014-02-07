@@ -354,12 +354,17 @@ func (b *Brog) setLangCookie(req *http.Request, rw http.ResponseWriter) {
 func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	b.Debug("Language not set for multilingual blog")
 
+	redirpath := req.URL.Path
+	if redirpath == "/changelang" {
+		redirpath = "/"
+	}
+
 	data := appContent{
 		Posts:     nil,
 		Pages:     nil,
 		Languages: b.Config.Languages,
 		CurPost:   nil,
-		Redir:     req.URL.Path,
+		Redir:     redirpath,
 	}
 
 	b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
