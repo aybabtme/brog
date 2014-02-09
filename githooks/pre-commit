@@ -2,5 +2,5 @@
 set -e
 
 echo "[pre-commit] Running findbugs"
-sh findbugs.sh || (echo "[pre-commit] findbugs failed!" && exit -1)
+sh findbugs.sh || exit -1
 echo "[pre-commit] ok!"
