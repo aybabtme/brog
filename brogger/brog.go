@@ -347,7 +347,7 @@ func (b *Brog) setLangCookie(req *http.Request, rw http.ResponseWriter) {
 	lang := req.URL.RawQuery
 	_, err := req.Cookie("lang")
 	if lang != "" && (err != nil || strings.HasSuffix(req.Referer(), "/changelang")) {
-		rw.Header().Add("Set-Cookie", "lang="+lang)
+		rw.Header().Add("Set-Cookie", "lang="+lang+";Path=/")
 	}
 }
 
