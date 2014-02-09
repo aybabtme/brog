@@ -88,7 +88,7 @@ func CopyBrogBinaries() []error {
 
 	err := config.persistToFile(ConfigFilename)
 	if err != nil {
-		return fmt.Errorf("persisting config file, %v", err)
+		errs = append(errs, fmt.Errorf("persisting config file, %v", err))
 	}
 
 	for _, asset := range allAssets {
