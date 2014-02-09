@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	Version = "v0.0.2"
 	// JSONIndentCount how many spaces to indent the config file
 	JSONIndentCount = 3
 )

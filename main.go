@@ -19,8 +19,10 @@ const (
 	Server = "server"
 	// Help shows the usage string
 	Help = "help"
+	// Version shows the current version of brog
+	Version = "version"
 
-	usage = `usage: brog {init | server [prod] | create [new post name] | page [new page name]}
+	usage = `usage: brog {init | server [prod] | create [new post name] | page [new page name] | version}
 
 'brog' is a tool to initialize brog structures, serve the content
 of brog structures and create new posts in a brog structure.
@@ -44,6 +46,8 @@ The following are brog's valid commands with the arguments they take :
                           location specified by the config file.
 
     brog help             Shows this message.
+
+    brog version          Prints the current version of brog.
 `
 )
 
@@ -75,6 +79,9 @@ func main() {
 		case Page:
 			followingWords := strings.Join(commands[i+1:], "_")
 			doCreate(followingWords, "page")
+			return
+		case Version:
+			fmt.Println(brogger.Version)
 			return
 		case Help:
 		default:
