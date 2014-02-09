@@ -69,7 +69,7 @@ func TestSetLangCookie(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://localhost:3000/?en", nil)
 	rrw := httptest.NewRecorder()
 	b.setLangCookie(req, rrw)
-	if rrw.HeaderMap["Set-Cookie"][0] != "lang=en" {
+	if rrw.HeaderMap["Set-Cookie"][0] != "lang=en;Path=/" {
 		t.Error("?en does not produce the right Set-Cookie header in the response")
 	}
 	cookie := &http.Cookie{
@@ -85,7 +85,7 @@ func TestSetLangCookie(t *testing.T) {
 	req.Header.Add("Referer", "http://localhost:3000/changelang")
 	rrw = httptest.NewRecorder()
 	b.setLangCookie(req, rrw)
-	if rrw.HeaderMap["Set-Cookie"][0] != "lang=en" {
+	if rrw.HeaderMap["Set-Cookie"][0] != "lang=en;Path=/" {
 		t.Error("Set-Cookie header not sent despite being referred from /changelang")
 	}
 }
