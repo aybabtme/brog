@@ -18,12 +18,13 @@ import (
 // brog posts and watches for changes in posts and templates.
 type Brog struct {
 	*logMux
-	isProd   bool
-	Config   *Config
-	Pid      int
-	tmplMngr *templateManager
-	postMngr *postManager
-	pageMngr *postManager
+	isProd      bool
+	Config      *Config
+	Pid         int
+	tmplMngr    *templateManager
+	postMngr    *postManager
+	pageMngr    *postManager
+	middlewares [](func(http.HandlerFunc) http.HandlerFunc)
 }
 
 type appContent struct {
@@ -131,11 +132,16 @@ func (b *Brog) ListenAndServe() error {
 		return fmt.Errorf("starting watchers, %v", err)
 	}
 
-	http.HandleFunc("/heartbeat", b.heartBeat) // don't log heartbeat, too noisy
-	http.HandleFunc("/changelang", b.logHandlerFunc(b.langSelectFunc))
-	http.HandleFunc("/posts/", b.logHandlerFunc(b.langHandlerFunc(b.postFunc)))
-	http.HandleFunc("/pages/", b.logHandlerFunc(b.langHandlerFunc(b.pageFunc)))
-	http.HandleFunc("/", b.logHandlerFunc(b.langHandlerFunc(b.indexFunc)))
+	b.HandleFunc("/heartbeat", b.heartBeat) // don't add middleware to heartbeat
+	b.middlewares = append(b.middlewares, b.logHandlerFunc)
+
+	// langSelect shouldn't have language middleware on it
+	b.HandleFunc("/changelang", b.langSelectFunc)
+	b.middlewares = append(b.middlewares, b.langHandlerFunc)
+
+	b.HandleFunc("/posts/", b.postFunc)
+	b.HandleFunc("/pages/", b.pageFunc)
+	b.HandleFunc("/", b.indexFunc)
 
 	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
 	http.Handle("/assets/", http.StripPrefix("/assets/", b.logHandler(fileServer)))
@@ -221,6 +227,17 @@ func (b *Brog) logHandler(h http.Handler) http.Handler {
 		h.ServeHTTP(w, req)
 		b.Ok("Done in %s", time.Since(now))
 	})
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Middleware
+////////////////////////////////////////////////////////////////////////////////
+
+func (b *Brog) HandleFunc(path string, h http.HandlerFunc) {
+	for _, middleware := range b.middlewares {
+		h = middleware(h)
+	}
+	http.HandleFunc(path, h)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
