@@ -1,12 +1,14 @@
 package brogger
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/russross/blackfriday"
 	"io/ioutil"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -20,7 +22,7 @@ type post struct {
 	Invisible bool      `json:"invisible"`
 	Abstract  string    `json:"abstract"`
 	Language  string    `json:"language"`
-	Content   string    // Loaded from the Markdown part
+	Content   string    `json:"-"` // Loaded from the Markdown part
 }
 
 func (p *post) GetID() string {
@@ -29,6 +31,24 @@ func (p *post) GetID() string {
 
 func (p *post) setID() {
 	p.id = url.QueryEscape(stripExtension(p.filename))
+}
+
+func (p *post) exportToFile(filename string) error {
+	postBuf := bytes.NewBuffer(nil)
+
+	data, err := json.MarshalIndent(p, "", strings.Repeat(" ", JSONIndentCount))
+	if err != nil {
+		return fmt.Errorf("encoding post to JSON, %v", err)
+	}
+
+	// Writing to a memory buffer can't fail (well...)
+	_, _ = postBuf.Write(data)
+	_, _ = postBuf.WriteString("\n" + p.Content)
+
+	if err := ioutil.WriteFile(filename, postBuf.Bytes(), 0640); err != nil {
+		return fmt.Errorf("writing post's bytes to '%s', %v", filename, err)
+	}
+	return nil
 }
 
 func newPostFromFile(filename string) (*post, error) {

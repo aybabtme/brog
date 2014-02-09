@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -26,7 +27,6 @@ var allAssets = map[string]packed{
 
 	// Base posts
 	"sample.md": {"sample.md", DefaultPostPath, basePostsSampleMd},
-	"blank.md":  {"blank.md", DefaultPostPath, basePostsBlankMd},
 
 	// Base page
 	"about.md": {"about.md", DefaultPagePath, basePagesAboutMd},
@@ -118,5 +118,14 @@ func CopyBlankToFilename(conf *Config, filename string, filenamepath string) err
 		filenamepath = conf.PostPath
 	}
 	fullpath := filepath.Clean(filenamepath) + string(os.PathSeparator) + filename + conf.PostFileExt
-	return ioutil.WriteFile(fullpath, basePostsBlankMd, 0640)
+
+	post := post{
+		Title:     filename,
+		Date:      time.Now(),
+		Invisible: true,
+		Language:  "en",
+		Content:   "Write markdown content here.",
+	}
+
+	return post.exportToFile(fullpath)
 }
