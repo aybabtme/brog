@@ -27,7 +27,6 @@ var allAssets = map[string]packed{
 
 	// Base posts
 	"sample.md": {"sample.md", DefaultPostPath, basePostsSampleMd},
-	"blank.md":  {"blank.md", DefaultPostPath, basePostsBlankMd},
 
 	// Base page
 	"about.md": {"about.md", DefaultPagePath, basePagesAboutMd},

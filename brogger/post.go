@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/russross/blackfriday"
-	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -46,16 +45,10 @@ func (p *post) exportToFile(filename string) error {
 	_, _ = postBuf.Write(data)
 	_, _ = postBuf.WriteString("\n" + p.Content)
 
-	fd, err := os.Create(filename)
-	if err != nil {
-		return fmt.Errorf("creating file for post, %v", err)
+	if err := ioutil.WriteFile(filename, postBuf.Bytes(), 0640); err != nil {
+		return fmt.Errorf("writing post's bytes to '%s', %v", filename, err)
 	}
-
-	if _, err := io.Copy(fd, postBuf); err != nil {
-		_ = fd.Close()
-		return fmt.Errorf("copying buffer to file, %v", err)
-	}
-	return fd.Close()
+	return nil
 }
 
 func newPostFromFile(filename string) (*post, error) {
