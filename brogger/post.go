@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/russross/blackfriday"
-	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
