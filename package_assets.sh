@@ -11,5 +11,6 @@ base/assets/css/*.css   \
 base/assets/js/*.js     \
 base/templates/*.gohtml \
 base/posts/*.md         \
+base/pages/*.md         \
 base/.gitignore         \
 base/*.md

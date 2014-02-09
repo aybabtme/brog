@@ -23,12 +23,15 @@ type Brog struct {
 	Pid      int
 	tmplMngr *templateManager
 	postMngr *postManager
+	pageMngr *postManager
 }
 
 type appContent struct {
 	Posts     []*post
+	Pages     []*post
 	Languages []string
 	CurPost   *post
+	Redir     string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -81,6 +84,10 @@ func (b *Brog) Close() error {
 		errHandler(b.postMngr.Close())
 	}
 
+	if b.pageMngr != nil {
+		errHandler(b.pageMngr.Close())
+	}
+
 	if b.tmplMngr != nil {
 		errHandler(b.tmplMngr.Close())
 	}
@@ -126,8 +133,9 @@ func (b *Brog) ListenAndServe() error {
 
 	http.HandleFunc("/heartbeat", b.heartBeat) // don't log heartbeat, too noisy
 	http.HandleFunc("/changelang", b.logHandlerFunc(b.langSelectFunc))
-	http.HandleFunc("/posts/", b.logHandlerFunc(b.postFunc))
-	http.HandleFunc("/", b.logHandlerFunc(b.indexFunc))
+	http.HandleFunc("/posts/", b.logHandlerFunc(b.langHandlerFunc(b.postFunc)))
+	http.HandleFunc("/pages/", b.logHandlerFunc(b.langHandlerFunc(b.pageFunc)))
+	http.HandleFunc("/", b.logHandlerFunc(b.langHandlerFunc(b.indexFunc)))
 
 	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
 	http.Handle("/assets/", http.StripPrefix("/assets/", b.logHandler(fileServer)))
@@ -165,7 +173,27 @@ func (b *Brog) startWatchers() error {
 	if err != nil {
 		return fmt.Errorf("starting post manager, %v", err)
 	}
+
+	pageMngr, err := startPostManager(b, b.Config.PagePath)
+	if err != nil {
+		return fmt.Errorf("starting page manager, %v", err)
+	}
+
 	b.postMngr = postMngr
+	b.pageMngr = pageMngr
+
+	return nil
+}
+
+// write PID because sysadmin
+func (b *Brog) writePID() error {
+	b.Ok("Galactic coordinates: %d,%02d", b.Pid/100, b.Pid%100)
+
+	pidBytes := []byte(strconv.Itoa(b.Pid))
+	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
+		return fmt.Errorf("error writing to PID file: %v", err)
+	}
+
 	return nil
 }
 
@@ -207,15 +235,13 @@ func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
 
 func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
-	if b.Config.Multilingual {
-		b.langIndexFunc(rw, req)
-		return
-	}
-
-	posts := b.postMngr.GetAllPosts()
+	lang, _ := b.extractLanguage(req)
+	pages := b.pageMngr.GetAllPostsWithLanguage(lang)
+	posts := b.postMngr.GetAllPostsWithLanguage(lang)
 
 	data := appContent{
 		Posts:     posts,
+		Pages:     pages,
 		Languages: b.Config.Languages,
 		CurPost:   nil,
 	}
@@ -231,7 +257,10 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 
-	postID := path.Base(req.RequestURI)
+	lang, _ := b.extractLanguage(req)
+	pages := b.pageMngr.GetAllPostsWithLanguage(lang)
+
+	postID := path.Base(strings.SplitN(req.RequestURI, "?", 2)[0])
 	post, ok := b.postMngr.GetPost(postID)
 	if !ok {
 		b.Warn("not found, %v", req)
@@ -241,6 +270,7 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 
 	data := appContent{
 		Posts:     nil,
+		Pages:     pages,
 		Languages: b.Config.Languages,
 		CurPost:   post,
 	}
@@ -254,32 +284,39 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 	})
 }
 
-// Multilingual support
+func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
 
-func (b *Brog) langIndexFunc(rw http.ResponseWriter, req *http.Request) {
-	lang, validLang := b.extractLanguage(req)
-	b.setLangCookie(req, rw)
-	if !validLang {
-		b.langSelectFunc(rw, req)
+	lang, _ := b.extractLanguage(req)
+	pages := b.pageMngr.GetAllPostsWithLanguage(lang)
+
+	pageID := path.Base(strings.SplitN(req.RequestURI, "?", 2)[0])
+	page, ok := b.pageMngr.GetPost(pageID)
+
+	if !ok {
+		b.Warn("not found, %v", req)
+		http.NotFound(rw, req)
 		return
 	}
 
-	posts := b.postMngr.GetAllPostsWithLanguage(lang)
-
 	data := appContent{
-		Posts:     posts,
+		Posts:     nil,
+		Pages:     pages,
 		Languages: b.Config.Languages,
-		CurPost:   nil,
+		CurPost:   page,
 	}
 
-	b.tmplMngr.DoWithIndex(func(t *template.Template) {
+	b.tmplMngr.DoWithPost(func(t *template.Template) {
 		if err := t.Execute(rw, data); err != nil {
-			b.Err("serving index request, %v", err)
+			b.Err("serving post request for ID=%s, %v", pageID, err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	})
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Multilingual support
+////////////////////////////////////////////////////////////////////////////////
 
 func (b *Brog) validLangInQuery(lang string) bool {
 	for _, val := range b.Config.Languages {
@@ -316,10 +353,18 @@ func (b *Brog) setLangCookie(req *http.Request, rw http.ResponseWriter) {
 
 func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	b.Debug("Language not set for multilingual blog")
+
+	redirpath := req.URL.Path
+	if redirpath == "/changelang" {
+		redirpath = "/"
+	}
+
 	data := appContent{
 		Posts:     nil,
+		Pages:     nil,
 		Languages: b.Config.Languages,
 		CurPost:   nil,
+		Redir:     redirpath,
 	}
 
 	b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
@@ -332,14 +377,16 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	})
 }
 
-// write PID because sysadmin
-func (b *Brog) writePID() error {
-	b.Ok("Assimilating drone of species #%d", b.Pid)
-
-	pidBytes := []byte(strconv.Itoa(b.Pid))
-	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
-		return fmt.Errorf("error writing to PID file: %v", err)
-	}
-
-	return nil
+func (b *Brog) langHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if b.Config.Multilingual {
+			_, validLang := b.extractLanguage(req)
+			b.setLangCookie(req, rw)
+			if !validLang {
+				b.langSelectFunc(rw, req)
+			} else {
+				h.ServeHTTP(rw, req)
+			}
+		}
+	})
 }

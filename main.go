@@ -13,12 +13,14 @@ const (
 	Init = "init"
 	// Create a new blank post in the post folder
 	Create = "create"
+	// Create a new blank page in the page folder
+	Page = "page"
 	// Server starts brog at the current path
 	Server = "server"
 	// Help shows the usage string
 	Help = "help"
 
-	usage = `usage: brog {init | server [prod] | create [new post name]}
+	usage = `usage: brog {init | server [prod] | create [new post name] | page [new page name]}
 
 'brog' is a tool to initialize brog structures, serve the content
 of brog structures and create new posts in a brog structure.
@@ -36,6 +38,9 @@ The following are brog's valid commands with the arguments they take :
                           default, brog runs in development mode.
 
     brog create [name]    Creates a blank post in file [name], in the
+                          location specified by the config file.
+
+    brog page [name]      Creates a blank page in file [name], in the
                           location specified by the config file.
 
     brog help             Shows this message.
@@ -65,7 +70,11 @@ func main() {
 			return
 		case Create:
 			followingWords := strings.Join(commands[i+1:], "_")
-			doCreate(followingWords)
+			doCreate(followingWords, "post")
+			return
+		case Page:
+			followingWords := strings.Join(commands[i+1:], "_")
+			doCreate(followingWords, "page")
 			return
 		case Help:
 		default:
@@ -114,7 +123,7 @@ func doServer(isProd bool) {
 
 }
 
-func doCreate(newPostFilename string) {
+func doCreate(newPostFilename string, creationType string) {
 	brog, err := brogger.PrepareBrog(false)
 	if err != nil {
 		printPreBrogError("Couldn't create new post.\n")
@@ -124,9 +133,13 @@ func doCreate(newPostFilename string) {
 	}
 	defer closeOrPanic(brog)
 
-	err = brogger.CopyBlankToFilename(brog.Config, newPostFilename)
+	if creationType == "page" {
+		err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, brog.Config.PagePath)
+	} else {
+		err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, brog.Config.PostPath)
+	}
 	if err != nil {
-		brog.Err("Brog post creation failed, %v.", err)
+		brog.Err("Brog %s creation failed, %v.", creationType, err)
 		brog.Err("Why do you resist?")
 		return
 	}
