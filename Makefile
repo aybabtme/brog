@@ -13,6 +13,7 @@ clean:
 	go clean
 	rm -rf templates
 	rm -rf posts
+	rm -rf pages
 	rm -rf assets
 	rm -f brog_config.json
 	rm -f brog.log
