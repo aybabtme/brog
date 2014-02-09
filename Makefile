@@ -24,6 +24,7 @@ configure: clean
 	go get -u github.com/kisielk/errcheck
 	go get -u code.google.com/p/go.tools/cmd/vet
 	go get -u github.com/golang/lint
+	go get -t -u ./...
 
 # Perform all the steps to install a clean build of brog
 install: configure all
