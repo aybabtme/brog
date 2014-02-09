@@ -384,6 +384,7 @@ func (b *Brog) langHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
 			b.setLangCookie(req, rw)
 			if !validLang {
 				b.langSelectFunc(rw, req)
+				return
 			}
 		}
 		h.ServeHTTP(rw, req)
