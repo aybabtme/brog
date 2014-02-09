@@ -1,4 +1,4 @@
-brog
+brog [![Build Status](https://drone.io/github.com/aybabtme/brog/status.png)](https://drone.io/github.com/aybabtme/brog/latest)
 ====
 
 Static blog app.
