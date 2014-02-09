@@ -21,11 +21,12 @@ clean:
 # Sets up a system to be able to build brog
 configure: clean
 	@echo "> Preparing system for build."
+	ln -s ../../githooks/pre-commit .git/hooks/pre-commit
 	go get -u github.com/chsc/bin2go
 	go get -u github.com/kisielk/errcheck
 	go get -u code.google.com/p/go.tools/cmd/vet
 	go get -u github.com/golang/lint/golint
-	go get -t -u ./...
+	go get -t ./...
 
 # Perform all the steps to install a clean build of brog
 install: configure all
