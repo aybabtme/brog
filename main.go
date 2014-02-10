@@ -4,50 +4,33 @@ import (
 	"fmt"
 	"github.com/aybabtme/brog/brogger"
 	"github.com/aybabtme/color/brush"
+	"github.com/docopt/docopt.go"
 	"os"
 	"strings"
 )
 
 const (
-	// Init a brog structure, but don't run the brog.
-	Init = "init"
-	// Create a new blank post in the post folder
-	Create = "create"
-	// Create a new blank page in the page folder
-	Page = "page"
-	// Server starts brog at the current path
-	Server = "server"
-	// Help shows the usage string
-	Help = "help"
-	// Version shows the current version of brog
-	Version = "version"
+	usage = `Brog
 
-	usage = `usage: brog {init | server [prod] | create [new post name] | page [new page name] | version}
+Usage:
+  brog -i | --init
+  brog (-s | --server) [--prod]
+  brog (-c | --create) [--page] <new post name>...
+  brog -h | --help
+  brog -v | --version
 
-'brog' is a tool to initialize brog structures, serve the content
-of brog structures and create new posts in a brog structure.
-
-The following are brog's valid commands with the arguments they take :
-
-    brog init             Takes no argument, creates a new brog struc-
-                          ture at the current working directory.
-
-    brog server [prod]    Starts serving the brog structure at the
-                          current location and watch for changes in the
-                          template and post folders specified by the
-                          config file.  If [prod], use the production
-                          port number specified in the config file. By
-                          default, brog runs in development mode.
-
-    brog create [name]    Creates a blank post in file [name], in the
-                          location specified by the config file.
-
-    brog page [name]      Creates a blank page in file [name], in the
-                          location specified by the config file.
-
-    brog help             Shows this message.
-
-    brog version          Prints the current version of brog.
+Options:
+  -i --init      Creates a new brog structure at the current working directory
+  -s --server    Starts serving the brog structure at current location and watch
+                 for changes in the template, page and post folders specified by
+                 the config file. If --prod, use production port/socket
+                 specified in the config file. Brog runs in development mode by
+                 default
+  -c --create    Creates a blank post in the file specified on the commandline
+                 in the locations specified by the config file. Creates a blank
+                 page instead of a post if --page.
+  -v --version   Displays the current version of brog
+  -h --help      Displays this help message
 `
 )
 
@@ -59,34 +42,25 @@ var (
 )
 
 func main() {
-	commands := os.Args[1:]
-	for i, arg := range commands {
-		switch arg {
-		case Init:
-			doInit()
-			return
-		case Server:
-			if len(commands) > i+1 {
-				doServer(commands[i+1] == "prod")
-			} else {
-				doServer(false)
-			}
-			return
-		case Create:
-			followingWords := strings.Join(commands[i+1:], "_")
-			doCreate(followingWords, "post")
-			return
-		case Page:
-			followingWords := strings.Join(commands[i+1:], "_")
+	arguments, _ := docopt.Parse(usage, nil, true, brogger.Version, false)
+	if arguments["--init"].(bool) == true {
+		doInit()
+		return
+	} else if arguments["--server"].(bool) == true {
+		doServer(arguments["--prod"].(bool) == true)
+		return
+	} else if arguments["--create"].(bool) == true {
+		newPostNameList := arguments["<new post name>"]
+		followingWords := strings.Join(newPostNameList.([]string), "_")
+		if arguments["--page"].(bool) == true {
 			doCreate(followingWords, "page")
-			return
-		case Version:
-			fmt.Println(brogger.Version)
-			return
-		case Help:
-		default:
-			printPreBrogError("Unknown command: %s.\n", arg)
+		} else {
+			doCreate(followingWords, "post")
 		}
+		return
+	} else if arguments["--version"].(bool) == true {
+		fmt.Println(brogger.Version)
+		return
 	}
 	fmt.Println(usage)
 }
@@ -159,7 +133,7 @@ func printPreBrogError(format string, args ...interface{}) {
 }
 
 func printTryInitMessage() {
-	fmt.Printf("Try initializing a brog here, run : brog %s.\n", Init)
+	fmt.Printf("Try initializing a brog here, run : brog --init.\n")
 }
 
 func closeOrPanic(brog *brogger.Brog) {
