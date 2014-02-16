@@ -1,6 +1,7 @@
 package brogger
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -144,7 +145,7 @@ func (b *Brog) ListenAndServe() error {
 	b.HandleFunc("/", b.indexFunc)
 
 	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
-	http.Handle("/assets/", http.StripPrefix("/assets/", b.logHandler(fileServer)))
+	http.Handle("/assets/", http.StripPrefix("/assets/", b.logHandler(b.gzipHandler(fileServer))))
 
 	b.Ok("Assimilation completed.")
 	if b.isProd {
@@ -238,6 +239,23 @@ func (b *Brog) HandleFunc(path string, h http.HandlerFunc) {
 		h = middleware(h)
 	}
 	http.HandleFunc(path, h)
+}
+
+//gzip handler for the assets files
+func (b *Brog) gzipHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if !strings.Contains(req.Header.Get("Accept-Encoding"), "gzip") {
+			h.ServeHTTP(w, req)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer func() {
+			_ = gz.Close()
+		}()
+		gzrw := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		h.ServeHTTP(gzrw, req)
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
