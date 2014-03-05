@@ -74,6 +74,18 @@ To remove artifacts resulting in a build/run at the root folder of `brog`:
 make clean
 ```
 
+Deploying Brog for production
+--------------------------
+
+Brog is not too picky about how it is deployed, yet some users have found the following to be helpful.
+
+* Create a system user and group for Brog (brog:brog)
+* Install Brog in a standalone location. There is no hard requirement on that, but make sure the location is possessed by the user running Brog
+* If using nginx as a reverse proxy to the Brog socket, make sure nginx can access the socket
+* Init your Brog and then test it manually
+* Deploy the init script, configure it and make sure it works
+* Start the service and let it run. You now have a working brog!
+
 License
 -------
 
