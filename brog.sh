@@ -169,20 +169,6 @@ status() {
   fi
 }
 
-reload(){
-  exit_if_not_running
-  if [ "$wpid" = "0" ];then
-    echo "The Brog instance is not running thus its configuration can't be reloaded."
-    exit 1
-  fi
-  printf "Reloading Brog configuration... "
-  kill -USR2 "$wpid"
-  echo "Done."
-  # Waiting 2 seconds to let the service settle.
-  sleep 2
-  status
-}
-
 restart(){
   check_status
   if [ "$brog_status" = "0" ]; then
@@ -203,14 +189,11 @@ case "$1" in
   restart)
         restart
         ;;
-  reload|force-reload)
-	reload
-        ;;
   status)
         status
         ;;
   *)
-        echo "Usage: service brog {start|stop|restart|reload|status}"
+        echo "Usage: service brog {start|stop|restart|status}"
         exit 1
         ;;
 esac
