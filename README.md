@@ -75,7 +75,7 @@ make clean
 ```
 
 Deploying Brog for production
---------------------------
+-----------------------------
 
 Brog is not too picky about how it is deployed, yet some users have found the following to be helpful.
 

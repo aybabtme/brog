@@ -1,8 +1,5 @@
 #! /bin/sh
 
-# BROG
-# Author: Maxime 'Faeriol' Paradis
-
 ### BEGIN INIT INFO
 # Provides:          brog
 # Required-Start:    $local_fs $remote_fs $network $syslog
@@ -28,21 +25,22 @@ brog_socket_path="$socket_path/brog.sock"
 ### Here ends user configuration ###
 
 
-# Switch to the app_user if it is not he/she who is running the script.
+# Switch to the app_user if it is not them who is running the script.
 if [ "$(whoami)" != "$app_user" ]; then
   sudo -u "$app_user" -H -i $0 "$@"; exit;
 fi
 
 # Switch to the Brog path, if it fails exit with an error.
 if ! cd "$app_root" ; then
- echo "Failed to cd into $app_root, exiting!";  exit 1
+ echo "Failed to cd into '$app_root', exiting!";  exit 1
 fi
 
 ### Init Script functions
 
 check_pids(){
-  if ! mkdir -p "$pid_path"; then
-    echo "Could not create the path $pid_path needed to store the pids."
+  if ! [ -d "$pid_path" ]; then
+    echo "Could not find the path '$pid_path' needed to store the pids."
+    echo "Check your configuration"
     exit 1
   fi
   # If there exists a file which should hold the value of the Brog pid: read it.
@@ -87,10 +85,10 @@ check_stale_pids(){
 
 # Check if a socket file was left behind and remove it if necessary
 check_stale_socket(){
-    #Only clean if brog not running
+    # Only clean if brog not running
     if [ -e "$brog_socket_path" ]; then
     echo "Removing stale brog socket. This is most likely caused by brog crashing the last time it ran."
-    echo "You may want to tell this to the devs"
+    echo "You may want to tell this to the devs. See https://github.com/aybabtme/brog/issue"
     if ! rm "$brog_socket_path"; then
       echo "Unable to remove stale socket, exiting"
       exit 1
@@ -114,14 +112,15 @@ start() {
 
   # Then check if the service is running. If it is: don't start again.
   if [ "$brog_status" = "0" ]; then
-    echo "The Brog instance is already running with pid $wpid, not restarting."
+    echo "The Brog instance is already running with pid '$wpid', not restarting."
   else
     echo "Starting the Brog instance..."
     
     ./brog server prod & disown
   fi
-
-  # Finally check the status to tell wether or not brog is running
+  # Let settle because in some configuration the following will report brog is not running because it's still starting
+  sleep 1  
+  # Finally check the status to tell whether or not brog is running
   status
 }
 
@@ -130,7 +129,7 @@ stop() {
   exit_if_not_running
   # If the Brog instance is running, tell it to stop;
   if [ "$brog_status" = "0" ]; then
-    #Send SIGTERM to terminate process gracefully
+    # Send SIGTERM to terminate process gracefully
     kill -15 $wpid
     echo "Stopping the Brog instance..."
     stopping=true
@@ -163,7 +162,7 @@ status() {
     return
   fi
   if [ "$brog_status" = "0" ]; then
-      echo "The Brog instance with pid $wpid is running."
+      echo "The Brog instance with pid '$wpid' is running."
   else
       printf "The Brog instance is \033[31mnot running\033[0m.\n"
   fi
