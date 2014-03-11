@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"path"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"text/template"
 	"time"
 )
@@ -23,7 +23,7 @@ type Brog struct {
 	isProd   bool
 	Config   *Config
 	Pid      int
-	Sock 	 string
+	sock     string
 	tmplMngr *templateManager
 	postMngr *postManager
 }
@@ -97,12 +97,12 @@ func (b *Brog) Close() error {
 		return fmt.Errorf("caught errors while closing, %v", errs)
 	}
 
-	if err := os.Remove("brog.pid"); err != nil {
-		return fmt.Errorf("caught error while deleting pidfile, %v", err)
+	if err := os.Remove(b.Config.PidFilename); err != nil {
+		return fmt.Errorf("deleting pidfile '%s', %v", b.Config.PidFilename, err)
 	}
 
-	if err := os.Remove(b.Sock); err != nil {
-		return fmt.Errorf("caught error while deleting socket file: %v", err)
+	if err := os.Remove(b.sock); err != nil {
+		return fmt.Errorf("deleting socket file: %v", err)
 	}
 	return nil
 }
@@ -115,11 +115,11 @@ func (b *Brog) ListenAndServe() error {
 	runtime.GOMAXPROCS(b.Config.MaxCPUs)
 
 	if b.isProd {
-		b.Sock = b.Config.ProdPort
+		b.sock = b.Config.ProdPort
 	} else {
-		b.Sock = b.Config.DevelPort
+		b.sock = b.Config.DevelPort
 	}
-	port, err := strconv.ParseInt(b.Sock, 10, 0)
+	port, err := strconv.ParseInt(b.sock, 10, 0)
 
 	var addr string
 	if err == nil {
@@ -127,7 +127,7 @@ func (b *Brog) ListenAndServe() error {
 		b.Ok("CAPTAIN: Open channel, %s", addr)
 	} else {
 		addr = ""
-		b.Ok("CAPTAIN: Open channel, unix://%s", b.Sock)
+		b.Ok("CAPTAIN: Open channel, unix://%s", b.sock)
 	}
 
 	b.Warn("ON SCREEN: We are the Brog. Resistance is futile.")
@@ -152,7 +152,7 @@ func (b *Brog) ListenAndServe() error {
 	if addr != "" {
 		l, err = net.Listen("tcp", addr)
 	} else {
-		l, err = net.Listen("unix", b.Sock)
+		l, err = net.Listen("unix", b.sock)
 	}
 	if err != nil {
 		return err
@@ -349,8 +349,8 @@ func (b *Brog) writePID() error {
 	b.Ok("Assimilating drone of species #%d", b.Pid)
 
 	pidBytes := []byte(strconv.Itoa(b.Pid))
-	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
-		return fmt.Errorf("error writing to PID file: %v", err)
+	if err := ioutil.WriteFile(b.Config.PidFilename, pidBytes, 0755); err != nil {
+		return fmt.Errorf("error writing to PID file '%s': %v", b.Config.PidFilename, err)
 	}
 
 	return nil
@@ -359,11 +359,11 @@ func (b *Brog) writePID() error {
 // Make sure we are going to catch sigterms
 func (b *Brog) sigCatch() {
 	c := make(chan os.Signal, 1)
-    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-    go func() {
-        <-c
-        b.Ok("Federation ordered to abort mission")
-        b.Close()
-        os.Exit(1)
-    }()
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		b.Ok("Federation ordered to abort mission with SIGTERM instruction")
+		b.Close()
+		os.Exit(1)
+	}()
 }
