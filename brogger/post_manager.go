@@ -87,6 +87,9 @@ func (p *postManager) GetAllPosts() []*post {
 }
 
 func (p *postManager) GetAllPostsWithLanguage(lang string) []*post {
+	if lang == "" {
+		return p.GetAllPosts()
+	}
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	var postCopy []*post

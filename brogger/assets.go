@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -26,11 +27,9 @@ var allAssets = map[string]packed{
 
 	// Base posts
 	"sample.md": {"sample.md", DefaultPostPath, basePostsSampleMd},
-	"blank.md":  {"blank.md", DefaultPostPath, basePostsBlankMd},
 
-	// Base files
-	".gitignore": {".gitignore", "", baseGitignore},
-	"README.md":  {"README.md", "", baseREADMEMd},
+	// Base page
+	"about.md": {"about.md", DefaultPagePath, basePagesAboutMd},
 }
 
 var allTemplates = map[string]packed{
@@ -89,7 +88,7 @@ func CopyBrogBinaries() []error {
 
 	err := config.persistToFile(ConfigFilename)
 	if err != nil {
-		fmt.Errorf("persisting config file, %v", err)
+		errs = append(errs, fmt.Errorf("persisting config file, %v", err))
 	}
 
 	for _, asset := range allAssets {
@@ -111,10 +110,22 @@ func CopyBrogBinaries() []error {
 
 // CopyBlankToFilename creates a blank post at the given filename, under the asset
 // path specified by conf
-func CopyBlankToFilename(conf *Config, filename string) error {
+func CopyBlankToFilename(conf *Config, filename string, filenamepath string) error {
 	if filename == "" {
 		return fmt.Errorf("no filename specified")
 	}
-	fullpath := filepath.Clean(conf.PostPath) + string(os.PathSeparator) + filename + conf.PostFileExt
-	return ioutil.WriteFile(fullpath, basePostsBlankMd, 0640)
+	if filenamepath == "" {
+		filenamepath = conf.PostPath
+	}
+	fullpath := filepath.Clean(filenamepath) + string(os.PathSeparator) + filename + conf.PostFileExt
+
+	post := post{
+		Title:     filename,
+		Date:      time.Now(),
+		Invisible: true,
+		Language:  "en",
+		Content:   "Write markdown content here.",
+	}
+
+	return post.exportToFile(fullpath)
 }

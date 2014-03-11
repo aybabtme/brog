@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	Version = "v0.0.2"
 	// JSONIndentCount how many spaces to indent the config file
 	JSONIndentCount = 3
 )
@@ -23,6 +24,7 @@ var (
 	DefaultMaxCPUs          = runtime.NumCPU()
 	DefaultTemplatePath     = "templates" + string(os.PathSeparator)
 	DefaultPostPath         = "posts" + string(os.PathSeparator)
+	DefaultPagePath         = "pages" + string(os.PathSeparator)
 	DefaultAssetPath        = "assets" + string(os.PathSeparator)
 	DefaultPostFileExt      = ".md"
 	DefaultPidFilename      = "brog.pid"
@@ -44,6 +46,7 @@ type Config struct {
 	MaxCPUs          int      `json:"maxCpus"`
 	TemplatePath     string   `json:"templatePath"`
 	PostPath         string   `json:"postPath"`
+	PagePath         string   `json:"pagePath"`
 	AssetPath        string   `json:"assetPath"`
 	PostFileExt      string   `json:"postFileExtension"`
 	PidFilename      string   `json:"pidFilename"`
@@ -64,6 +67,7 @@ func newDefaultConfig() *Config {
 		MaxCPUs:          DefaultMaxCPUs,
 		TemplatePath:     filepath.Clean(DefaultTemplatePath),
 		PostPath:         filepath.Clean(DefaultPostPath),
+		PagePath:         filepath.Clean(DefaultPagePath),
 		AssetPath:        filepath.Clean(DefaultAssetPath),
 		PostFileExt:      DefaultPostFileExt,
 		PidFilename:      filepath.Clean(DefaultPidFilename),
@@ -106,7 +110,6 @@ func (cfg *Config) selfValidate() error {
 func loadConfig() (*Config, error) {
 	if !fileExists(ConfigFilename) {
 		return nil, fmt.Errorf("there is no brog config file named '%s' here", ConfigFilename)
-
 	}
 	return loadFromFile()
 }
@@ -145,7 +148,6 @@ func loadFromFile() (*Config, error) {
 }
 
 func (cfg *Config) persistToFile(filename string) error {
-
 	jsonData, err := json.MarshalIndent(cfg, "", strings.Repeat(" ", JSONIndentCount))
 	if err != nil {
 		return fmt.Errorf("marshalling config data, %v", err)
