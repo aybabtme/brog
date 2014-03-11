@@ -150,7 +150,13 @@ stop() {
   done
   sleep 1
   # Cleaning up unused pids
-  rm "$brog_pid_path" 2>/dev/null
+  if [ -e "$brog_pid_path" ]; then
+    echo "Removing stale brog pidfile. This is most likely caused by brog not cleaning it."
+    echo "You may want to investigate or tell this to the devs. See https://github.com/aybabtme/brog/issue"
+    if ! rm "$brog_pid_path"; then
+      echo "Unable to remove stale pid!!"
+    fi
+  fi
   status
 }
 
