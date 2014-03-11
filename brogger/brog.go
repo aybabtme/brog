@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"path"
 	"runtime"
 	"strconv"
@@ -21,6 +23,7 @@ type Brog struct {
 	isProd   bool
 	Config   *Config
 	Pid      int
+	Sock 	 string
 	tmplMngr *templateManager
 	postMngr *postManager
 }
@@ -59,6 +62,8 @@ func PrepareBrog(isProd bool) (*Brog, error) {
 		Pid:    os.Getpid(),
 	}
 
+	brog.sigCatch()
+
 	if isProd {
 		if err := brog.writePID(); err != nil {
 			panic(err)
@@ -91,6 +96,14 @@ func (b *Brog) Close() error {
 	if len(errs) != 0 {
 		return fmt.Errorf("caught errors while closing, %v", errs)
 	}
+
+	if err := os.Remove("brog.pid"); err != nil {
+		return fmt.Errorf("caught error while deleting pidfile, %v", err)
+	}
+
+	if err := os.Remove(b.Sock); err != nil {
+		return fmt.Errorf("caught error while deleting socket file: %v", err)
+	}
 	return nil
 }
 
@@ -101,13 +114,12 @@ func (b *Brog) ListenAndServe() error {
 
 	runtime.GOMAXPROCS(b.Config.MaxCPUs)
 
-	var sock string
 	if b.isProd {
-		sock = b.Config.ProdPort
+		b.Sock = b.Config.ProdPort
 	} else {
-		sock = b.Config.DevelPort
+		b.Sock = b.Config.DevelPort
 	}
-	port, err := strconv.ParseInt(sock, 10, 0)
+	port, err := strconv.ParseInt(b.Sock, 10, 0)
 
 	var addr string
 	if err == nil {
@@ -115,7 +127,7 @@ func (b *Brog) ListenAndServe() error {
 		b.Ok("CAPTAIN: Open channel, %s", addr)
 	} else {
 		addr = ""
-		b.Ok("CAPTAIN: Open channel, unix://%s", sock)
+		b.Ok("CAPTAIN: Open channel, unix://%s", b.Sock)
 	}
 
 	b.Warn("ON SCREEN: We are the Brog. Resistance is futile.")
@@ -140,7 +152,7 @@ func (b *Brog) ListenAndServe() error {
 	if addr != "" {
 		l, err = net.Listen("tcp", addr)
 	} else {
-		l, err = net.Listen("unix", sock)
+		l, err = net.Listen("unix", b.Sock)
 	}
 	if err != nil {
 		return err
@@ -342,4 +354,16 @@ func (b *Brog) writePID() error {
 	}
 
 	return nil
+}
+
+// Make sure we are going to catch sigterms
+func (b *Brog) sigCatch() {
+	c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+    go func() {
+        <-c
+        b.Ok("Federation ordered to abort mission")
+        b.Close()
+        os.Exit(1)
+    }()
 }

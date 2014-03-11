@@ -10,7 +10,7 @@
 # Description:       Brog blogging platform
 ### END INIT INFO
 
-### Originally based on the Gitlab init script.
+
 
 # Script variable names should be lower-case not to conflict with internal
 # /bin/sh variables such as PATH, EDITOR or SHELL.
