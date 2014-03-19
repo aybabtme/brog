@@ -129,8 +129,8 @@ stop() {
   exit_if_not_running
   # If the Brog instance is running, tell it to stop;
   if [ "$brog_status" = "0" ]; then
-    # Send SIGTERM to terminate process gracefully
-    kill -15 $wpid
+    # Send SIGINT to terminate process gracefully
+    kill -2 $wpid
     echo "Stopping the Brog instance..."
     stopping=true
   else
