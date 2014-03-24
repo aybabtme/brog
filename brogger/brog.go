@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"runtime"
 	"strconv"
@@ -22,6 +23,7 @@ type Brog struct {
 	isProd      bool
 	Config      *Config
 	Pid         int
+	netList     net.Listener
 	tmplMngr    *templateManager
 	postMngr    *postManager
 	pageMngr    *postManager
@@ -64,6 +66,8 @@ func PrepareBrog(isProd bool) (*Brog, error) {
 		Pid:    os.Getpid(),
 	}
 
+	brog.sigCatch()
+
 	if isProd {
 		if err := brog.writePID(); err != nil {
 			panic(err)
@@ -97,9 +101,22 @@ func (b *Brog) Close() error {
 	if b.logMux != nil {
 		errHandler(b.logMux.Close())
 	}
+
 	if len(errs) != 0 {
 		return fmt.Errorf("caught errors while closing, %v", errs)
 	}
+
+	if b.isProd {
+		err := os.Remove(b.Config.PidFilename)
+		if err != nil {
+			return fmt.Errorf("deleting pidfile '%s', %v", b.Config.PidFilename, err)
+		}
+	}
+
+	if b.netList != nil {
+		errHandler(b.netList.Close())
+	}
+
 	return nil
 }
 
@@ -151,16 +168,17 @@ func (b *Brog) ListenAndServe() error {
 	if b.isProd {
 		b.Warn("Going live in production.")
 	}
-	var l net.Listener
+
 	if addr != "" {
-		l, err = net.Listen("tcp", addr)
+		b.netList, err = net.Listen("tcp", addr)
 	} else {
-		l, err = net.Listen("unix", sock)
+		b.netList, err = net.Listen("unix", sock)
 	}
 	if err != nil {
 		return err
 	}
-	return http.Serve(l, nil)
+
+	return http.Serve(b.netList, nil)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -197,11 +215,23 @@ func (b *Brog) writePID() error {
 	b.Ok("Galactic coordinates: %d,%02d", b.Pid/100, b.Pid%100)
 
 	pidBytes := []byte(strconv.Itoa(b.Pid))
-	if err := ioutil.WriteFile("brog.pid", pidBytes, 0755); err != nil {
-		return fmt.Errorf("error writing to PID file: %v", err)
+	if err := ioutil.WriteFile(b.Config.PidFilename, pidBytes, 0755); err != nil {
+		return fmt.Errorf("writing to PID file '%s', %v", b.Config.PidFilename, err)
 	}
 
 	return nil
+}
+
+// Make sure we are going to catch interupts
+func (b *Brog) sigCatch() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		b.Ok("Brog invasion INTERRUPTed")
+		b.Close()
+		os.Exit(1)
+	}()
 }
 
 // Logging helpers
