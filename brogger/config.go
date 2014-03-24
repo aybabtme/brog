@@ -27,6 +27,7 @@ var (
 	DefaultPagePath         = "pages" + string(os.PathSeparator)
 	DefaultAssetPath        = "assets" + string(os.PathSeparator)
 	DefaultPostFileExt      = ".md"
+	DefaultPidFilename      = "brog.pid"
 	DefaultLogFilename      = "brog.log"
 	DefaultLogVerbosity     = "watch"
 	DefaultConsoleVerbosity = "watch"
@@ -48,6 +49,7 @@ type Config struct {
 	PagePath         string   `json:"pagePath"`
 	AssetPath        string   `json:"assetPath"`
 	PostFileExt      string   `json:"postFileExtension"`
+	PidFilename      string   `json:"pidFilename"`
 	LogFilename      string   `json:"logFilename"`
 	LogFileVerbosity string   `json:"logFileVerbosity"`
 	ConsoleVerbosity string   `json:"consoleVerbosity"`
@@ -68,6 +70,7 @@ func newDefaultConfig() *Config {
 		PagePath:         filepath.Clean(DefaultPagePath),
 		AssetPath:        filepath.Clean(DefaultAssetPath),
 		PostFileExt:      DefaultPostFileExt,
+		PidFilename:      filepath.Clean(DefaultPidFilename),
 		LogFilename:      filepath.Clean(DefaultLogFilename),
 		LogFileVerbosity: DefaultLogVerbosity,
 		ConsoleVerbosity: DefaultConsoleVerbosity,
@@ -98,6 +101,7 @@ func (cfg *Config) selfValidate() error {
 	cfg.AssetPath = filepath.Clean(cfg.AssetPath)
 	cfg.PostPath = filepath.Clean(cfg.PostPath)
 	cfg.TemplatePath = filepath.Clean(cfg.TemplatePath)
+	cfg.PidFilename = filepath.Clean(cfg.PidFilename)
 	cfg.LogFilename = filepath.Clean(cfg.LogFilename)
 
 	return nil

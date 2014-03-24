@@ -2,20 +2,20 @@
    "prodPort": "80",
    "develPort": "3000",
    "hostName": "localhost",
-   "maxCpus": 0,
+   "maxCpus": 8,
    "templatePath": "templates",
    "postPath": "posts",
    "pagePath": "pages",
    "assetPath": "assets",
    "postFileExtension": ".md",
+   "pidFilename": "brog.pid",
    "logFilename": "brog.log",
    "logFileVerbosity": "watch",
-   "consoleVerbosity": "debug",
+   "consoleVerbosity": "watch",
    "rewriteInvalid": true,
    "rewriteMissing": true,
-   "multilingual": true,
+   "multilingual": false,
    "languages": [
-      "en",
-      "fr"
+      "en"
    ]
 }
