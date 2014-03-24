@@ -229,7 +229,10 @@ func (b *Brog) sigCatch() {
 	go func() {
 		<-c
 		b.Ok("Brog invasion INTERRUPTed")
-		b.Close()
+
+		if err := b.Close(); err != nil {
+			b.Err("Couldn't close brog cleanly, %v", err)
+		}
 		os.Exit(1)
 	}()
 }
