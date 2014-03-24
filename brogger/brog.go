@@ -23,7 +23,7 @@ type Brog struct {
 	isProd      bool
 	Config      *Config
 	Pid         int
-	sock        string
+	netList     net.Listener
 	tmplMngr    *templateManager
 	postMngr    *postManager
 	pageMngr    *postManager
@@ -101,24 +101,22 @@ func (b *Brog) Close() error {
 	if b.logMux != nil {
 		errHandler(b.logMux.Close())
 	}
+
 	if len(errs) != 0 {
 		return fmt.Errorf("caught errors while closing, %v", errs)
 	}
 
 	if b.isProd {
-		if err := os.Remove(b.Config.PidFilename); err != nil {
+		err := os.Remove(b.Config.PidFilename)
+		if err != nil {
 			return fmt.Errorf("deleting pidfile '%s', %v", b.Config.PidFilename, err)
 		}
 	}
 
-	_, err := strconv.ParseInt(b.sock, 10, 0)
-	if nil != err {
-		if _, err := os.Stat(b.sock); nil == err {
-			if err := os.Remove(b.sock); err != nil {
-				return fmt.Errorf("deleting socket file: %v", err)
-			}
-		}
+	if b.netList != nil {
+		errHandler(b.netList.Close())
 	}
+
 	return nil
 }
 
@@ -129,12 +127,13 @@ func (b *Brog) ListenAndServe() error {
 
 	runtime.GOMAXPROCS(b.Config.MaxCPUs)
 
+	var sock string
 	if b.isProd {
-		b.sock = b.Config.ProdPort
+		sock = b.Config.ProdPort
 	} else {
-		b.sock = b.Config.DevelPort
+		sock = b.Config.DevelPort
 	}
-	port, err := strconv.ParseInt(b.sock, 10, 0)
+	port, err := strconv.ParseInt(sock, 10, 0)
 
 	var addr string
 	if err == nil {
@@ -142,7 +141,7 @@ func (b *Brog) ListenAndServe() error {
 		b.Ok("CAPTAIN: Open channel, %s", addr)
 	} else {
 		addr = ""
-		b.Ok("CAPTAIN: Open channel, unix://%s", b.sock)
+		b.Ok("CAPTAIN: Open channel, unix://%s", sock)
 	}
 
 	b.Warn("ON SCREEN: We are the Brog. Resistance is futile.")
@@ -169,16 +168,17 @@ func (b *Brog) ListenAndServe() error {
 	if b.isProd {
 		b.Warn("Going live in production.")
 	}
-	var l net.Listener
+
 	if addr != "" {
-		l, err = net.Listen("tcp", addr)
+		b.netList, err = net.Listen("tcp", addr)
 	} else {
-		l, err = net.Listen("unix", b.sock)
+		b.netList, err = net.Listen("unix", sock)
 	}
 	if err != nil {
 		return err
 	}
-	return http.Serve(l, nil)
+
+	return http.Serve(b.netList, nil)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -216,10 +216,22 @@ func (b *Brog) writePID() error {
 
 	pidBytes := []byte(strconv.Itoa(b.Pid))
 	if err := ioutil.WriteFile(b.Config.PidFilename, pidBytes, 0755); err != nil {
-		return fmt.Errorf("error writing to PID file '%s': %v", b.Config.PidFilename, err)
+		return fmt.Errorf("writing to PID file '%s', %v", b.Config.PidFilename, err)
 	}
 
 	return nil
+}
+
+// Make sure we are going to catch interupts
+func (b *Brog) sigCatch() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		b.Ok("Brog invasion INTERRUPTed")
+		b.Close()
+		os.Exit(1)
+	}()
 }
 
 // Logging helpers
@@ -442,16 +454,4 @@ func (b *Brog) langHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
 		}
 		h.ServeHTTP(rw, req)
 	})
-}
-
-// Make sure we are going to catch interupts
-func (b *Brog) sigCatch() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		<-c
-		b.Ok("Brog invasion INTERRUPTed")
-		b.Close()
-		os.Exit(1)
-	}()
 }
