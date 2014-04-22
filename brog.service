@@ -1,0 +1,18 @@
+[Unit]
+Description=Brog Blogging Engine
+After=network.target
+
+# Make sure that:
+# WorkingDirectory is the place you brog lives at
+# ExecStart points to the full path of the binary
+# User is the user you want to run brog as
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/myblog
+ExecStart=/usr/local/go/bin/brog server
+Restart=always
+User=brog
+
+[Install]
+WantedBy=multi-user.target
