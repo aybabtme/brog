@@ -1,5 +1,5 @@
 [Unit]
-Description=Brog Blogging Engine
+Description=Brog Engine
 After=network.target
 
 # Make sure that:
