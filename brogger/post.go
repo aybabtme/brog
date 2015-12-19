@@ -119,7 +119,6 @@ func markdownWithHTML(input []byte) []byte {
 	htmlFlags |= blackfriday.HTML_USE_SMARTYPANTS
 	htmlFlags |= blackfriday.HTML_SMARTYPANTS_FRACTIONS
 	htmlFlags |= blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
-	htmlFlags |= blackfriday.HTML_GITHUB_BLOCKCODE
 	renderer := blackfriday.HtmlRenderer(htmlFlags, "", "")
 
 	// set up the parser
