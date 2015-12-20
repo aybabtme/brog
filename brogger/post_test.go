@@ -8,11 +8,11 @@ import (
 
 func TestNewPostFromFile(t *testing.T) {
 	/* Perhaps this should be a file in a test/ directory */
-	os.Chdir("base")
-	defer os.Chdir("..")
+	_ = os.Chdir("base")
+	defer func() { _ = os.Chdir("..") }()
 	post, err := newPostFromFile("posts" + string(os.PathSeparator) + "sample.md")
 	if err != nil {
-		t.Error("Can't read post because of error: %v", err)
+		t.Errorf("Can't read post because of error: %v", err)
 	}
 	if post.Title != "My First Post" {
 		t.Error("newPostFromFile doesn't read title properly. Got", post.Title)
@@ -37,7 +37,7 @@ func TestNewPostFromFile(t *testing.T) {
 func TestGetAllPosts(t *testing.T) {
 	pmgr, err := startPostManager(SetUpDefaultBrog(), "base"+string(os.PathSeparator)+DefaultPostPath)
 	if err != nil {
-		t.Error("Error encountered starting post manager: %v", err)
+		t.Errorf("Error encountered starting post manager: %v", err)
 	}
 	posts := pmgr.GetAllPosts()
 	if len(posts) > 0 {

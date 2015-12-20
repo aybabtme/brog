@@ -50,11 +50,11 @@ func TestSelfValidate(t *testing.T) {
 }
 
 func TestJsonConfigStruct(t *testing.T) {
-	os.Chdir("base")
-	defer os.Chdir("..")
+	_ = os.Chdir("base")
+	defer func() { _ = os.Chdir("..") }()
 	config, _ = loadConfig()
-	config.persistToFile("test_config.json")
-	defer os.Remove("test_config.json")
+	_ = config.persistToFile("test_config.json")
+	defer func() { _ = os.Remove("test_config.json") }()
 	origfile, _ := os.Open("brog_config.json")
 	testfile, _ := os.Open("test_config.json")
 	origbuf := make([]byte, 512)
