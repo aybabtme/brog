@@ -24,7 +24,7 @@ configure: clean
 	ln -s ../../githooks/pre-commit .git/hooks/pre-commit
 	go get -u github.com/chsc/bin2go
 	go get -u github.com/kisielk/errcheck
-	go get -u code.google.com/p/go.tools/cmd/vet
+	go get -u golang.org/x/tools/cmd/vet
 	go get -u github.com/golang/lint/golint
 	go get -t ./...
 
