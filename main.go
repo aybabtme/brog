@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/aybabtme/brog/brogger"
-	"github.com/aybabtme/color/brush"
 	"os"
 	"strings"
+
+	"github.com/aybabtme/brog/brogger"
+	"github.com/aybabtme/log"
 )
 
 const (
@@ -51,13 +52,6 @@ The following are brog's valid commands with the arguments they take :
 `
 )
 
-var (
-	errPfx = fmt.Sprintf("%s%s%s ",
-		brush.DarkGray("["),
-		brush.Red("ERROR"),
-		brush.DarkGray("]"))
-)
-
 func main() {
 	commands := os.Args[1:]
 	for i, arg := range commands {
@@ -85,57 +79,48 @@ func main() {
 			return
 		case Help:
 		default:
-			printPreBrogError("Unknown command: %s.\n", arg)
+			log.KV("command", arg).Error("unknown command")
 		}
 	}
 	fmt.Println(usage)
 }
 
 func doInit() {
-	fmt.Println(brush.DarkGray("A dark geometric shape is approaching..."))
 	errs := brogger.CopyBrogBinaries()
 	if len(errs) != 0 {
-		printPreBrogError("Couldn't inject brog nanoprobes.\n")
+		log.KV("error.count", len(errs)).Error("multiple errors encountered")
 		for _, err := range errs {
-			printPreBrogError("Message : %v.\n", err)
+			log.Err(err).Error("initialization error")
 		}
 		return
 	}
 
 	brog, err := brogger.PrepareBrog(false)
-	if len(errs) != 0 {
-		printPreBrogError("Couldn't prepare brog structure.\n")
-		printPreBrogError("Message : %v.\n", err)
+	if err != nil {
+		log.Err(err).Error("can't prepare brog")
 		return
 	}
-	brog.Ok("Initiliazing a brog. Resistance is futile.")
+	log.Info("initiliazing a brog, resistance is futile")
 
 	defer closeOrPanic(brog)
-	brog.Ok("Brog nanoprobes implanted.")
 }
 
 func doServer(isProd bool) {
 
 	brog, err := brogger.PrepareBrog(isProd)
 	if err != nil {
-		printPreBrogError("Couldn't start brog server.\n")
-		printPreBrogError("Message : %v.\n", err)
-		printTryInitMessage()
+		log.Err(err).Fatal("can't start brog server")
 		return
 	}
 	defer closeOrPanic(brog)
 
 	err = brog.ListenAndServe()
-	brog.Err("Whoops! %v.", err)
-
+	log.Err(err).Fatal("failed to serve")
 }
 
 func doCreate(newPostFilename string, creationType string) {
 	brog, err := brogger.PrepareBrog(false)
 	if err != nil {
-		printPreBrogError("Couldn't create new post.\n")
-		printPreBrogError("Message : %v.\n", err)
-		printTryInitMessage()
 		return
 	}
 	defer closeOrPanic(brog)
@@ -146,20 +131,10 @@ func doCreate(newPostFilename string, creationType string) {
 		err = brogger.CopyBlankToFilename(brog.Config, newPostFilename, brog.Config.PostPath)
 	}
 	if err != nil {
-		brog.Err("Brog %s creation failed, %v.", creationType, err)
-		brog.Err("Why do you resist?")
+		log.Err(err).KV("creation.type", creationType).Error("creation of brog failed")
 		return
 	}
-	brog.Ok("'%s' will become one with the Brog.", newPostFilename)
-}
-
-func printPreBrogError(format string, args ...interface{}) {
-	errMsg := fmt.Sprintf("%s%s", errPfx, format)
-	fmt.Fprintf(os.Stderr, errMsg, args...)
-}
-
-func printTryInitMessage() {
-	fmt.Printf("Try initializing a brog here, run : brog %s.\n", Init)
+	log.KV("file.name", newPostFilename).Info("creation of brog post successful")
 }
 
 func closeOrPanic(brog *brogger.Brog) {

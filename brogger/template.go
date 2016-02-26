@@ -2,10 +2,12 @@ package brogger
 
 import (
 	"fmt"
-	"github.com/howeyc/fsnotify"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/aybabtme/log"
+	"github.com/howeyc/fsnotify"
 
 	// Using `text` instead of `html` to keep the
 	// JS/CSS/HTML from inside Markdown posts
@@ -151,7 +153,7 @@ func (t *templateManager) watchForChanges(dirname string) error {
 			case ev := <-t.watcher.Event:
 				t.processTemplateEvent(ev)
 			case err := <-t.watcher.Error:
-				t.brog.Err("watching templates in '%s', %v", dirname, err)
+				log.Err(err).KV("dir.name", dirname).Error("error watching templates")
 			case <-t.die:
 				return
 			}
@@ -167,7 +169,7 @@ func (t *templateManager) processTemplateEvent(ev *fsnotify.FileEvent) {
 	case ".gohtml":
 	case ".tmpl":
 	default:
-		t.brog.Debug("Templates ignore files in '%s': %s", ext, ev.Name)
+		log.KV("ext", ext).KV("file.name", ev.Name).Info("ignoring file")
 		return
 	}
 
@@ -187,46 +189,42 @@ func (t *templateManager) processTemplateEvent(ev *fsnotify.FileEvent) {
 		return
 	}
 
-	t.brog.Err("FileEvent '%s' is not recognized", ev.String())
+	log.KV("file.event", ev.String()).Error("unknown file event")
 }
 
 func (t *templateManager) processTemplateModify(ev *fsnotify.FileEvent) {
 	filename := filepath.Base(ev.Name)
 	tmpl, ok := allTemplates[filename]
 	if !ok {
-		t.brog.Watch("'%s' ignored. Brog can only use its default templates.", ev.Name)
+		log.KV("file.name", ev.Name).Error("ignoring, brog can only use its default templates")
 		return
 	}
 
-	t.brog.Watch("Template '%s' changed, parsing templates again.", ev.Name)
+	ll := log.KV("file.name", ev.Name)
+	ll.Info("template name changed, parsing templates again")
 	err := t.initializeAppTmpl()
 	if err == nil {
-		t.brog.Watch("Assimilation completed. '%s' has become one with the brog.", ev.Name)
+		ll.Info("new templates have been assimilated")
 		return
 	}
-	t.brog.Err("Failed reinitialization of templates, %v", err)
-
-	t.brog.Err("Brog detected the corruption of a vital part: %s", ev.Name)
+	ll.Err(err).Error("failed to reinitialize templates, reconstructing")
 
 	if !t.brog.Config.RewriteInvalid {
 		// Nothing to do, just fail
 		return
 	}
 
-	t.brog.Warn("Brog to eradicate threat. Overwriting '%s'.", ev.Name)
-
 	if err := tmpl.rewriteInDir(t.brog.Config.TemplatePath); err != nil {
-		t.brog.Err("Eradication of '%s' failed, %v", filename, err)
+		ll.Error("reconstruction failed")
 		return
 	}
 
 	if err := t.initializeAppTmpl(); err != nil {
-		t.brog.Err("Templates fail despite eradication of '%s', %v", filename, err)
+		ll.Err(err).Error("failed to reload templates after reconstruction")
 		return
 	}
 
-	t.brog.Warn("Brog has successfully eradicated threat to template '%s'", ev.Name)
-	t.brog.Warn("Resistance is futile.  You will be assimilated")
+	ll.Info("threat to template has been eradicated. Resistance is futile.  You will be assimilated")
 }
 
 func (t *templateManager) processTemplateDelete(ev *fsnotify.FileEvent) {
@@ -237,28 +235,27 @@ func (t *templateManager) processTemplateDelete(ev *fsnotify.FileEvent) {
 		// Don't care
 		return
 	}
-
-	t.brog.Err("Brog detected the destruction of a vital part: %s", ev.Name)
+	ll := log.KV("file.name", ev.Name)
+	ll.Error("detected the destruction of a vital part")
 
 	if !t.brog.Config.RewriteMissing {
 		// Nothing to do, just fail
 		return
 	}
 
-	t.brog.Warn("Brog to regenerate '%s'.", ev.Name)
+	ll.Error("reconstructing missing part")
 
 	if err := tmpl.replicateInDir(t.brog.Config.TemplatePath); err != nil {
-		t.brog.Err("Regeneration of '%s' failed, %v", filename, err)
+		ll.Err(err).Error("reconstruction failed")
 		return
 	}
 
 	if err := t.initializeAppTmpl(); err != nil {
-		t.brog.Err("Templates fail to load despite regeneration of '%s', %v", filename, err)
+		ll.Err(err).Error("failed to reload templates after reconstruction")
 		return
 	}
 
-	t.brog.Warn("Brog has successfully eradicated threat to template '%s'", ev.Name)
-	t.brog.Warn("Resistance is futile.  You will be assimilated")
+	ll.Info("threat to template has been eradicated. Resistance is futile.  You will be assimilated")
 }
 
 func stripExtension(fullpath string) string {

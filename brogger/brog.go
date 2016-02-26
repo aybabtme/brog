@@ -14,12 +14,13 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/aybabtme/log"
 )
 
 // Brog loads its configuration file, provide logging facility, serves
 // brog posts and watches for changes in posts and templates.
 type Brog struct {
-	*logMux
 	isProd      bool
 	Config      *Config
 	Pid         int
@@ -54,13 +55,11 @@ func PrepareBrog(isProd bool) (*Brog, error) {
 		return nil, fmt.Errorf("preparing brog's configuration, %v", err)
 	}
 
-	logMux, err := makeLogMux(config)
 	if err != nil {
 		return nil, fmt.Errorf("making log multiplexer on path %s, %v", config.LogFilename, err)
 	}
 
 	brog := &Brog{
-		logMux: logMux,
 		Config: config,
 		isProd: isProd,
 		Pid:    os.Getpid(),
@@ -96,10 +95,6 @@ func (b *Brog) Close() error {
 
 	if b.tmplMngr != nil {
 		errHandler(b.tmplMngr.Close())
-	}
-
-	if b.logMux != nil {
-		errHandler(b.logMux.Close())
 	}
 
 	if len(errs) != 0 {
@@ -138,13 +133,13 @@ func (b *Brog) ListenAndServe() error {
 	var addr string
 	if err == nil {
 		addr = fmt.Sprintf("%s:%d", b.Config.Hostname, port)
-		b.Ok("CAPTAIN: Open channel, %s", addr)
+		log.KV("addr", addr).Info("listening on TCP")
 	} else {
 		addr = ""
-		b.Ok("CAPTAIN: Open channel, unix://%s", sock)
+		log.KV("sock", "unix://"+sock).Info("listening on UNIX socket")
 	}
 
-	b.Warn("ON SCREEN: We are the Brog. Resistance is futile.")
+	log.Info("brog is starting")
 
 	if err := b.startWatchers(); err != nil {
 		return fmt.Errorf("starting watchers, %v", err)
@@ -162,12 +157,9 @@ func (b *Brog) ListenAndServe() error {
 	b.HandleFunc("/", b.indexFunc)
 
 	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
-	http.Handle("/assets/", http.StripPrefix("/assets/", b.logHandler(b.gzipHandler(fileServer))))
-
-	b.Ok("Assimilation completed.")
-	if b.isProd {
-		b.Warn("Going live in production.")
-	}
+	http.Handle("/assets/", http.StripPrefix("/assets/",
+		b.logHandlerFunc(b.gzipHandler(fileServer)),
+	))
 
 	if addr != "" {
 		b.netList, err = net.Listen("tcp", addr)
@@ -178,6 +170,8 @@ func (b *Brog) ListenAndServe() error {
 		return err
 	}
 
+	log.Info("brog is ready")
+
 	return http.Serve(b.netList, nil)
 }
 
@@ -186,7 +180,7 @@ func (b *Brog) ListenAndServe() error {
 ////////////////////////////////////////////////////////////////////////////////
 
 func (b *Brog) startWatchers() error {
-	b.Debug("Starting watchers")
+	log.Info("starting file watches")
 
 	tmplMngr, err := startTemplateManager(b, b.Config.TemplatePath)
 	if err != nil {
@@ -212,7 +206,10 @@ func (b *Brog) startWatchers() error {
 
 // write PID because sysadmin
 func (b *Brog) writePID() error {
-	b.Ok("Galactic coordinates: %d,%02d", b.Pid/100, b.Pid%100)
+	log.
+		KV("pid", b.Pid).
+		KV("pidfile", b.Config.PidFilename).
+		Info("writing pidfile")
 
 	pidBytes := []byte(strconv.Itoa(b.Pid))
 	if err := ioutil.WriteFile(b.Config.PidFilename, pidBytes, 0755); err != nil {
@@ -228,12 +225,11 @@ func (b *Brog) sigCatch() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
-		b.Ok("Brog invasion INTERRUPTed")
-
+		log.Info("caught signal, stopping")
 		if err := b.Close(); err != nil {
-			b.Err("Couldn't close brog cleanly, %v", err)
+			log.Err(err).Fatal("failed to close cleanly")
 		}
-		os.Exit(1)
+		os.Exit(0)
 	}()
 }
 
@@ -242,24 +238,15 @@ func (b *Brog) sigCatch() {
 func (b *Brog) logHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
-		b.Ok("request by %s for '%s' as '%s'",
-			req.RemoteAddr, req.RequestURI, req.UserAgent())
+		ll := log.
+			KV("req.raddr", req.RemoteAddr).
+			KV("req.uri", req.RequestURI).
+			KV("req.ua", req.UserAgent())
+		ll.Info("begin request")
 
 		now := time.Now()
 		h.ServeHTTP(w, req)
-		b.Ok("Done in %s", time.Since(now))
-	})
-}
-
-func (b *Brog) logHandler(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-
-		b.Ok("request by %s for '%s' as '%s'",
-			req.RemoteAddr, req.RequestURI, req.UserAgent())
-
-		now := time.Now()
-		h.ServeHTTP(w, req)
-		b.Ok("Done in %s", time.Since(now))
+		ll.KV("req.dur_s", time.Since(now).Seconds()).Info("done request")
 	})
 }
 
@@ -275,7 +262,7 @@ func (b *Brog) HandleFunc(path string, h http.HandlerFunc) {
 }
 
 //gzip handler for the assets files
-func (b *Brog) gzipHandler(h http.Handler) http.Handler {
+func (b *Brog) gzipHandler(h http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if !strings.Contains(req.Header.Get("Accept-Encoding"), "gzip") {
 			h.ServeHTTP(w, req)
@@ -297,7 +284,7 @@ func (b *Brog) gzipHandler(h http.Handler) http.Handler {
 
 // heartBeat answers 200 to any request.
 func (b *Brog) heartBeat(rw http.ResponseWriter, req *http.Request) {
-	b.Debug("Hearbeat!")
+	log.Info("hearbeat!")
 	rw.WriteHeader(http.StatusOK)
 }
 
@@ -316,7 +303,7 @@ func (b *Brog) indexFunc(rw http.ResponseWriter, req *http.Request) {
 
 	b.tmplMngr.DoWithIndex(func(t *template.Template) {
 		if err := t.Execute(rw, data); err != nil {
-			b.Err("serving index request, %v", err)
+			log.Err(err).Error("couldn't render index template")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -331,7 +318,6 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 	postID := path.Base(strings.SplitN(req.RequestURI, "?", 2)[0])
 	post, ok := b.postMngr.GetPost(postID)
 	if !ok {
-		b.Warn("not found, %v", req)
 		http.NotFound(rw, req)
 		return
 	}
@@ -345,7 +331,7 @@ func (b *Brog) postFunc(rw http.ResponseWriter, req *http.Request) {
 
 	b.tmplMngr.DoWithPost(func(t *template.Template) {
 		if err := t.Execute(rw, data); err != nil {
-			b.Err("serving post request for ID=%s, %v", postID, err)
+			log.Err(err).KV("post.id", postID).Error("couldn't render post template")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -361,7 +347,6 @@ func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
 	page, ok := b.pageMngr.GetPost(pageID)
 
 	if !ok {
-		b.Warn("not found, %v", req)
 		http.NotFound(rw, req)
 		return
 	}
@@ -375,7 +360,7 @@ func (b *Brog) pageFunc(rw http.ResponseWriter, req *http.Request) {
 
 	b.tmplMngr.DoWithPost(func(t *template.Template) {
 		if err := t.Execute(rw, data); err != nil {
-			b.Err("serving post request for ID=%s, %v", pageID, err)
+			log.Err(err).KV("page.id", pageID).Error("couldn't render page template")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -420,7 +405,6 @@ func (b *Brog) setLangCookie(req *http.Request, rw http.ResponseWriter) {
 }
 
 func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
-	b.Debug("Language not set for multilingual blog")
 
 	redirpath := req.URL.Path
 	if redirpath == "/changelang" {
@@ -436,9 +420,8 @@ func (b *Brog) langSelectFunc(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	b.tmplMngr.DoWithLangSelect(func(t *template.Template) {
-		b.Debug("Sending language selection screen")
 		if err := t.Execute(rw, data); err != nil {
-			b.Err("serving index, language select, request, %v", err)
+			log.Err(err).Error("couldn't render language selection template")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
