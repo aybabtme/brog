@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	Version = "v0.0.2"
 	// JSONIndentCount how many spaces to indent the config file
 	JSONIndentCount = 3
 )
@@ -28,7 +27,6 @@ var (
 	DefaultAssetPath        = "assets" + string(os.PathSeparator)
 	DefaultPostFileExt      = ".md"
 	DefaultPidFilename      = "brog.pid"
-	DefaultLogFilename      = "brog.log"
 	DefaultLogVerbosity     = "watch"
 	DefaultConsoleVerbosity = "watch"
 	DefaultRewriteInvalid   = true  // True so that brog has stable default
@@ -71,7 +69,6 @@ func newDefaultConfig() *Config {
 		AssetPath:        filepath.Clean(DefaultAssetPath),
 		PostFileExt:      DefaultPostFileExt,
 		PidFilename:      filepath.Clean(DefaultPidFilename),
-		LogFilename:      filepath.Clean(DefaultLogFilename),
 		LogFileVerbosity: DefaultLogVerbosity,
 		ConsoleVerbosity: DefaultConsoleVerbosity,
 		RewriteInvalid:   DefaultRewriteInvalid,

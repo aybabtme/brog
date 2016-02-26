@@ -10,6 +10,8 @@ import (
 )
 
 const (
+	version = "devel"
+
 	// Init a brog structure, but don't run the brog.
 	Init = "init"
 	// Create a new blank post in the post folder
@@ -75,7 +77,7 @@ func main() {
 			doCreate(followingWords, "page")
 			return
 		case Version:
-			fmt.Println(brogger.Version)
+			fmt.Println(version)
 			return
 		case Help:
 		default:

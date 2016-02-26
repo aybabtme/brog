@@ -1,0 +1,40 @@
+{
+	"ImportPath": "github.com/aybabtme/brog",
+	"GoVersion": "go1.6",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/aybabtme/log",
+			"Rev": "85259b5ee0ac4a8e01732885493e059c4c333059"
+		},
+		{
+			"ImportPath": "github.com/go-kit/kit/log",
+			"Rev": "b50c5697c253c3ea01687acbef12ac1b2d75a3af"
+		},
+		{
+			"ImportPath": "github.com/howeyc/fsnotify",
+			"Comment": "v0.9.0-16-gf0c08ee",
+			"Rev": "f0c08ee9c60704c1879025f2ae0ff3e000082c13"
+		},
+		{
+			"ImportPath": "github.com/russross/blackfriday",
+			"Comment": "v1.4-12-gd18b67a",
+			"Rev": "d18b67ae0afd61dae240896eae1785f00709aa31"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/sanitized_anchor_name",
+			"Rev": "10ef21a441db47d8b13ebcc5fd2310f636973c77"
+		},
+		{
+			"ImportPath": "gopkg.in/logfmt.v0",
+			"Rev": "c50dc9aa845e681529d8e49d3dc11ec0195aacac"
+		},
+		{
+			"ImportPath": "gopkg.in/stack.v1",
+			"Comment": "v1.4.0",
+			"Rev": "0585967eab0016c8e4e2d55ac20585b469574cec"
+		}
+	]
+}
