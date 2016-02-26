@@ -8,7 +8,6 @@
    "pagePath": "pages",
    "assetPath": "assets",
    "postFileExtension": ".md",
-   "pidFilename": "brog.pid",
    "rewriteInvalid": true,
    "rewriteMissing": true,
    "multilingual": false,

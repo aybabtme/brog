@@ -17,22 +17,19 @@ const (
 
 // Defaults for Brog's configuration.
 var (
-	DefaultProdPort         = "80"
-	DefaultDevelPort        = "3000"
-	DefaultHostname         = "localhost"
-	DefaultMaxCPUs          = runtime.NumCPU()
-	DefaultTemplatePath     = "templates" + string(os.PathSeparator)
-	DefaultPostPath         = "posts" + string(os.PathSeparator)
-	DefaultPagePath         = "pages" + string(os.PathSeparator)
-	DefaultAssetPath        = "assets" + string(os.PathSeparator)
-	DefaultPostFileExt      = ".md"
-	DefaultPidFilename      = "brog.pid"
-	DefaultLogVerbosity     = "watch"
-	DefaultConsoleVerbosity = "watch"
-	DefaultRewriteInvalid   = true  // True so that brog has stable default
-	DefaultRewriteMissing   = true  // True so that brog has stable default
-	DefaultMultilingual     = false // False because blogs are usually unilingual
-	DefaultLanguages        = []string{"en"}
+	DefaultProdPort       = "80"
+	DefaultDevelPort      = "3000"
+	DefaultHostname       = "localhost"
+	DefaultMaxCPUs        = runtime.NumCPU()
+	DefaultTemplatePath   = "templates" + string(os.PathSeparator)
+	DefaultPostPath       = "posts" + string(os.PathSeparator)
+	DefaultPagePath       = "pages" + string(os.PathSeparator)
+	DefaultAssetPath      = "assets" + string(os.PathSeparator)
+	DefaultPostFileExt    = ".md"
+	DefaultRewriteInvalid = true  // True so that brog has stable default
+	DefaultRewriteMissing = true  // True so that brog has stable default
+	DefaultMultilingual   = false // False because blogs are usually unilingual
+	DefaultLanguages      = []string{"en"}
 )
 
 // Config contains all the settings that a Brog uses to watch and create
@@ -47,9 +44,6 @@ type Config struct {
 	PagePath         string   `json:"pagePath"`
 	AssetPath        string   `json:"assetPath"`
 	PostFileExt      string   `json:"postFileExtension"`
-	PidFilename      string   `json:"pidFilename"`
-	LogFilename      string   `json:"logFilename"`
-	LogFileVerbosity string   `json:"logFileVerbosity"`
 	ConsoleVerbosity string   `json:"consoleVerbosity"`
 	RewriteInvalid   bool     `json:"rewriteInvalid"`
 	RewriteMissing   bool     `json:"rewriteMissing"`
@@ -59,22 +53,19 @@ type Config struct {
 
 func newDefaultConfig() *Config {
 	return &Config{
-		ProdPort:         DefaultProdPort,
-		DevelPort:        DefaultDevelPort,
-		Hostname:         DefaultHostname,
-		MaxCPUs:          DefaultMaxCPUs,
-		TemplatePath:     filepath.Clean(DefaultTemplatePath),
-		PostPath:         filepath.Clean(DefaultPostPath),
-		PagePath:         filepath.Clean(DefaultPagePath),
-		AssetPath:        filepath.Clean(DefaultAssetPath),
-		PostFileExt:      DefaultPostFileExt,
-		PidFilename:      filepath.Clean(DefaultPidFilename),
-		LogFileVerbosity: DefaultLogVerbosity,
-		ConsoleVerbosity: DefaultConsoleVerbosity,
-		RewriteInvalid:   DefaultRewriteInvalid,
-		RewriteMissing:   DefaultRewriteMissing,
-		Multilingual:     DefaultMultilingual,
-		Languages:        DefaultLanguages,
+		ProdPort:       DefaultProdPort,
+		DevelPort:      DefaultDevelPort,
+		Hostname:       DefaultHostname,
+		MaxCPUs:        DefaultMaxCPUs,
+		TemplatePath:   filepath.Clean(DefaultTemplatePath),
+		PostPath:       filepath.Clean(DefaultPostPath),
+		PagePath:       filepath.Clean(DefaultPagePath),
+		AssetPath:      filepath.Clean(DefaultAssetPath),
+		PostFileExt:    DefaultPostFileExt,
+		RewriteInvalid: DefaultRewriteInvalid,
+		RewriteMissing: DefaultRewriteMissing,
+		Multilingual:   DefaultMultilingual,
+		Languages:      DefaultLanguages,
 	}
 }
 
@@ -98,8 +89,6 @@ func (cfg *Config) selfValidate() error {
 	cfg.AssetPath = filepath.Clean(cfg.AssetPath)
 	cfg.PostPath = filepath.Clean(cfg.PostPath)
 	cfg.TemplatePath = filepath.Clean(cfg.TemplatePath)
-	cfg.PidFilename = filepath.Clean(cfg.PidFilename)
-	cfg.LogFilename = filepath.Clean(cfg.LogFilename)
 
 	return nil
 }

@@ -3,7 +3,6 @@ package brogger
 import (
 	"compress/gzip"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -24,7 +23,6 @@ import (
 type Brog struct {
 	isProd      bool
 	Config      *Config
-	Pid         int
 	netList     net.Listener
 	tmplMngr    *templateManager
 	postMngr    *postManager
@@ -56,23 +54,12 @@ func PrepareBrog(isProd bool) (*Brog, error) {
 		return nil, fmt.Errorf("preparing brog's configuration, %v", err)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("making log multiplexer on path %s, %v", config.LogFilename, err)
-	}
-
 	brog := &Brog{
 		Config: config,
 		isProd: isProd,
-		Pid:    os.Getpid(),
 	}
 
 	brog.sigCatch()
-
-	if isProd {
-		if err := brog.writePID(); err != nil {
-			panic(err)
-		}
-	}
 
 	return brog, nil
 }
@@ -100,13 +87,6 @@ func (b *Brog) Close() error {
 
 	if len(errs) != 0 {
 		return fmt.Errorf("caught errors while closing, %v", errs)
-	}
-
-	if b.isProd {
-		err := os.Remove(b.Config.PidFilename)
-		if err != nil {
-			return fmt.Errorf("deleting pidfile '%s', %v", b.Config.PidFilename, err)
-		}
 	}
 
 	if b.netList != nil {
@@ -206,21 +186,6 @@ func (b *Brog) startWatchers() error {
 
 	b.postMngr = postMngr
 	b.pageMngr = pageMngr
-
-	return nil
-}
-
-// write PID because sysadmin
-func (b *Brog) writePID() error {
-	log.
-		KV("pid", b.Pid).
-		KV("pidfile", b.Config.PidFilename).
-		Info("writing pidfile")
-
-	pidBytes := []byte(strconv.Itoa(b.Pid))
-	if err := ioutil.WriteFile(b.Config.PidFilename, pidBytes, 0755); err != nil {
-		return fmt.Errorf("writing to PID file '%s', %v", b.Config.PidFilename, err)
-	}
 
 	return nil
 }
