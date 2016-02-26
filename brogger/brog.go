@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/aybabtme/log"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Brog loads its configuration file, provide logging facility, serves
@@ -145,20 +146,25 @@ func (b *Brog) ListenAndServe() error {
 		return fmt.Errorf("starting watchers, %v", err)
 	}
 
-	b.HandleFunc("/heartbeat", b.heartBeat) // don't add middleware to heartbeat
+	// don't add middleware to prometheus/heartbeat
+	b.HandleFunc("/debug/metrics", b.prometheusHandler(prometheus.Handler().ServeHTTP, "srv", "metrics"))
+	b.HandleFunc("/heartbeat", b.prometheusHandler(b.heartBeat, "srv", "heartbeat"))
 	b.middlewares = append(b.middlewares, b.logHandlerFunc)
 
 	// langSelect shouldn't have language middleware on it
-	b.HandleFunc("/changelang", b.langSelectFunc)
+	b.HandleFunc("/changelang", b.prometheusHandler(b.langSelectFunc, "srv", "changelang"))
 	b.middlewares = append(b.middlewares, b.langHandlerFunc)
 
-	b.HandleFunc("/posts/", b.postFunc)
-	b.HandleFunc("/pages/", b.pageFunc)
-	b.HandleFunc("/", b.indexFunc)
+	b.HandleFunc("/posts/", b.prometheusHandler(b.postFunc, "srv", "posts"))
+	b.HandleFunc("/pages/", b.prometheusHandler(b.pageFunc, "srv", "pages"))
+	b.HandleFunc("/", b.prometheusHandler(b.indexFunc, "srv", "all"))
 
 	fileServer := http.FileServer(http.Dir(b.Config.AssetPath))
 	http.Handle("/assets/", http.StripPrefix("/assets/",
-		b.logHandlerFunc(b.gzipHandler(fileServer)),
+		b.prometheusHandler(
+			b.logHandlerFunc(b.gzipHandler(fileServer)),
+			"srv", "assets",
+		),
 	))
 
 	if addr != "" {
@@ -246,7 +252,7 @@ func (b *Brog) logHandlerFunc(h http.HandlerFunc) http.HandlerFunc {
 
 		now := time.Now()
 		h.ServeHTTP(w, req)
-		ll.KV("req.dur_s", time.Since(now).Seconds()).Info("done request")
+		ll.KV("req.dur_ms", time.Since(now).Nanoseconds()/1e6).Info("done request")
 	})
 }
 
@@ -276,6 +282,18 @@ func (b *Brog) gzipHandler(h http.Handler) http.HandlerFunc {
 		gzrw := gzipResponseWriter{Writer: gz, ResponseWriter: w}
 		h.ServeHTTP(gzrw, req)
 	})
+}
+
+// prometheus handler for matrics
+func (b *Brog) prometheusHandler(h http.HandlerFunc, k, v string) http.HandlerFunc {
+	return http.HandlerFunc(
+		prometheus.InstrumentHandlerFuncWithOpts(prometheus.SummaryOpts{
+			Namespace:   "brog",
+			Subsystem:   "http",
+			Objectives:  map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001, 0.999: 0.0001},
+			ConstLabels: map[string]string{k: v},
+		}, h),
+	)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
