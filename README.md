@@ -27,13 +27,13 @@ brog server
 ### linux
 
 ```bash
-wget -qO- https://github.com/aybabtme/brog/releases/download/0.1/brog_linux.tar.gz | tar xvz
+wget -qO- https://github.com/aybabtme/brog/releases/download/0.2/brog_linux.tar.gz | tar xvz
 ```
 
 ### darwin
 
 ```bash
-wget -qO- https://github.com/aybabtme/brog/releases/download/0.1/brog_darwin.tar.gz | tar xvz
+wget -qO- https://github.com/aybabtme/brog/releases/download/0.2/brog_darwin.tar.gz | tar xvz
 ```
 
 Config
